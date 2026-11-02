@@ -5,3 +5,13 @@ node_modules/
 data/
 coverage/
 *.log
+certs/
+*.pem
+*.key
+*.p12
+*.pfx
+*.pkpass
+.dev.vars
+.dev.vars.*
+.wrangler/
+.worker-build/

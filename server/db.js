@@ -1,21 +1,16 @@
-import { mkdirSync } from 'node:fs';
-import { DatabaseSync } from 'node:sqlite';
-export async function openDatabase() {
+export async function openDatabase({localFactory}={}) {
   const remote = process.env.TURSO_DATABASE_URL;
   let execute, transaction;
   if (remote) {
     if (!process.env.TURSO_AUTH_TOKEN) throw new Error('Falta TURSO_AUTH_TOKEN.');
-    const { createClient } = await import('@libsql/client');
+    const { createClient } = await import('@libsql/client/web');
     const client = createClient({url:remote,authToken:process.env.TURSO_AUTH_TOKEN});
     execute = async (sql,args=[]) => (await client.execute({sql,args})).rows;
     transaction = statements => client.batch(statements.map(([sql,args=[]])=>({sql,args})), 'write');
   } else {
     if (process.env.NODE_ENV === 'production') throw new Error('Configura Turso antes de iniciar producción.');
-    mkdirSync('data',{recursive:true});
-    const db = new DatabaseSync(process.env.LOCAL_DATABASE || 'data/chedex.db');
-    db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;');
-    execute = async (sql,args=[]) => db.prepare(sql).all(...args);
-    transaction = async statements => { db.exec('BEGIN IMMEDIATE');try{for(const [sql,args=[]] of statements)db.prepare(sql).run(...args);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;} };
+    if(!localFactory)throw new Error('Configura Turso para este alojamiento.');
+    ({execute,transaction}=localFactory());
   }
   for (const sql of [
     `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, lichess_id TEXT UNIQUE NOT NULL, public_id TEXT UNIQUE NOT NULL, profile TEXT NOT NULL, demo INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`,

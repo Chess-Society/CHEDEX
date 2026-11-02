@@ -13,17 +13,24 @@ const token='integration-test-token',second='second-test-token',id='test-user',p
 async function req(path,method='GET',data,auth=token,validOrigin=true){return fetch(`${localOrigin}${path}`,{method,headers:{Cookie:`chedex=${auth}`,...(method!=='GET'?{'Content-Type':'application/json','X-Chedex-Request':'1',Origin:validOrigin?origin:'https://evil.example'}:{})},...(data!==undefined?{body:JSON.stringify(data)}:{})});}
 before(async()=>{
   folder=await mkdtemp(join(tmpdir(),'chedex-test-'));const file=join(folder,'test.db');
-  child=spawn(process.execPath,['server/index.js'],{env:{...process.env,PORT:String(port),APP_URL:origin,NODE_ENV:'test',LOCAL_DATABASE:file,TURSO_DATABASE_URL:'',ENABLE_DEMO:'false'},stdio:['ignore','pipe','pipe']});
+  child=spawn(process.execPath,['server/local.js'],{env:{...process.env,PORT:String(port),APP_URL:origin,NODE_ENV:'test',LOCAL_DATABASE:file,TURSO_DATABASE_URL:'',ENABLE_DEMO:'false'},stdio:['ignore','pipe','pipe']});
   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('El servidor no inició.')),10000);child.stdout.on('data',data=>{if(String(data).includes('disponible')){clearTimeout(timer);resolve();}});child.on('exit',code=>{clearTimeout(timer);reject(new Error(`Servidor detenido: ${code}`));});});
   db=new DatabaseSync(file);db.exec('PRAGMA foreign_keys=ON');
-  for(const [uid,session] of [[id,token],['another-user',second]]){const p=defaults(uid);p.adultConfirmed=true;db.prepare('INSERT INTO users VALUES(?,?,?,?,?,?)').run(uid,uid,uid===id?publicId:'qrstuvwxyzabcdef',JSON.stringify(p),0,new Date().toISOString());db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(createHash('sha256').update(session).digest('hex'),uid,Date.now()+3600000);}
+  for(const [uid,session] of [[id,token],['another-user',second],['andresli','admin-test-token']]){const p=defaults(uid);p.adultConfirmed=true;db.prepare('INSERT INTO users VALUES(?,?,?,?,?,?)').run(uid,uid,uid===id?publicId:uid==='andresli'?'adminabcdefghijk':'qrstuvwxyzabcdef',JSON.stringify(p),0,new Date().toISOString());db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(createHash('sha256').update(session).digest('hex'),uid,Date.now()+3600000);}
 });
 after(async()=>{db?.close();if(child&&child.exitCode===null){child.kill();await new Promise(resolve=>child.once('exit',resolve));}if(folder)await rm(folder,{recursive:true,force:true});});
 test('seguridad, privacidad, CRUD, enlace, QR y borrado completo',async()=>{
+  assert.equal((await req('/healthz')).status,200);
+  assert.equal((await req('/api/admin')).status,403);
+  assert.equal((await req('/api/profile','PUT',{name:'AndresLi',isAdmin:true})).status,200);
+  assert.equal((await (await req('/api/me')).json()).isAdmin,false);
+  assert.equal((await req('/api/admin','GET',undefined,'admin-test-token')).status,200);
+  assert.equal((await (await req('/api/me','GET',undefined,'admin-test-token')).json()).isAdmin,true);
   assert.equal((await req('/api/me','GET',undefined,'invalid')).status,401);assert.equal((await req('/api/public/'+publicId)).status,404);
   assert.equal((await req('/api/profile','PUT',{public:true},token,false)).status,403);
   assert.equal((await req('/api/profile','PUT',{name:'Ana',public:true,contact:'secreto@example.org',visibility:{contact:false}})).status,200);
   let publicData=await (await req('/api/public/'+publicId)).json();assert.equal(publicData.profile.contact,undefined);
+  assert.equal((await req('/api/wallet/apple')).status,503);
   assert.equal((await req('/api/entries/tournaments','POST',{name:'Prueba',date:'2026-01-01',rounds:7,points:4,source:'https://example.org'})).status,201);
   let mine=await (await req('/api/me')).json();assert.equal(mine.entries.length,1);assert.equal(mine.entries[0].data.status,'Con fuente');const entry=mine.entries[0];
   assert.equal((await req(`/api/entries/tournaments/${entry.id}`,'DELETE',undefined,second)).status,404);
@@ -37,6 +44,7 @@ test('seguridad, privacidad, CRUD, enlace, QR y borrado completo',async()=>{
   mine=await (await req('/api/me')).json();assert.equal((await req('/api/public/'+mine.publicId)).status,200);
   assert.equal((await req('/api/profile','PUT',{public:false})).status,200);
   assert.equal((await req('/api/public/'+mine.publicId)).status,404);assert.equal((await req('/api/qr')).status,409);
+  assert.equal((await req('/api/wallet/apple')).status,409);
   const favorites=await (await req('/api/favorites','GET',undefined,second)).json();assert.equal(favorites[0].unavailable,true);assert.equal(favorites[0].profile,undefined);
   assert.equal((await req('/api/account','DELETE',{confirm:'no'})).status,400);assert.equal((await req('/api/account','DELETE',{confirm:'ELIMINAR'})).status,200);
   for(const table of ['entries','sessions'])assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE user_id=?`).get(id).n,0);

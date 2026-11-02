@@ -25,6 +25,8 @@ En PowerShell: `Copy-Item .env.example .env`. Abre http://127.0.0.1:3000. La dem
 - Consulta pública sin cuenta, favoritos privados y apertura de perfiles mediante su enlace. Los QR pueden escanearse con la cámara del móvil.
 - Perfil privado y contacto oculto por defecto. Visibilidad por secciones, invalidación del enlace, exportación JSON, cierre de sesión y eliminación transaccional de datos.
 - Estados calculados por el servidor: Declarado y Con fuente. Ningún formulario permite otorgar Verificado.
+- Primeros pasos guiados y campos opcionales agrupados para mantener cortos los formularios móviles.
+- Administración para la identidad de Lichess **AndresLi**, validada por el servidor. El alias editable no concede permisos; el panel muestra contadores y configuración sin revelar historiales privados.
 
 ## Turso y producción
 
@@ -39,7 +41,9 @@ TURSO_AUTH_TOKEN=valor-secreto
 ENABLE_DEMO=false
 ```
 
-No subas `.env` ni tokens a GitHub. En producción se exige Turso y HTTPS. Las tablas e índices se crean al iniciar sin destruir tablas existentes. Todas las consultas usan parámetros. Ejecuta la aplicación como proceso Node persistente tras un proxy HTTPS; no es un alojamiento de archivos estáticos. Los tokens de sesión se guardan como hashes, caducan a los 30 días y usan cookies HttpOnly/SameSite. Las escrituras exigen origen coincidente y cabecera propia. Limita peticiones en el proxy: el límite local por IP es básico y no interpreta cabeceras de proxies.
+No subas `.env`, `.dev.vars`, tokens ni certificados a GitHub. En producción se exige Turso y HTTPS. Las tablas e índices se crean al iniciar sin destruir tablas existentes. Todas las consultas usan parámetros. El alojamiento previsto es **Cloudflare Workers en chedex.app**; también se incluye Docker para un servidor Node. GitHub Pages por sí solo no ejecuta este servidor. Los tokens de sesión se guardan como hashes, caducan a los 30 días y usan cookies HttpOnly/SameSite. Las escrituras exigen origen coincidente y cabecera propia. El límite por IP de la aplicación es básico; configura límites adicionales en el alojamiento según el uso.
+
+La cuenta de Cloudflare del proyecto es **chesssociety.team@gmail.com**. El identificador de cuenta de `wrangler.jsonc` es público. Los secretos Turso y, en el futuro, los certificados Apple se configuran por separado en el Worker. Véase [despliegue en Cloudflare](docs/cloudflare.md).
 
 Lichess utiliza `${APP_URL}/auth/callback` como URI de retorno, sin scopes adicionales. El usuario autoriza el acceso en Lichess. `APP_URL` debe coincidir exactamente con el origen usado en el navegador. Prueba el flujo real con una cuenta autorizada antes del lanzamiento.
 
@@ -47,11 +51,11 @@ Referencias oficiales: [OAuth de Lichess](https://lichess.org/api#section/Authen
 
 ## Pendientes de lanzamiento
 
-- **Apple Wallet y Google Wallet:** aparecen como pendientes. No se emiten pases simulados. Se necesitan certificados/cuenta de desarrollador Apple y cuenta emisora/credenciales Google, además de implementar firma y actualización en el servidor.
+- **Apple Wallet (prioridad):** generador de pases firmados implementado y probado con certificados sintéticos. Se mantiene «Próximamente» hasta disponer de certificados Apple válidos y HTTPS. Requiere prueba de instalación real en iPhone. Las actualizaciones son manuales al volver a descargar; no se simulan actualizaciones automáticas. Véase [Apple Wallet](docs/apple-wallet.md). **Google Wallet** queda pospuesto.
 - **Menores:** se bloquea la publicación sin confirmar mayoría de edad. Esta declaración no se presenta como prueba de edad. Faltan procedimiento de autorización de representantes y controles específicos.
 - **Verificación oficial:** no habilitada; títulos y Elo son declarados, incluso con enlace. El futuro procedimiento autorizado deberá registrar origen y fecha de confirmación.
 - **Partidas PGN:** futuras. No se inventan partidas ni resultados individuales a partir de puntuaciones de torneos.
-- **Operación real:** conectar la base de la organización, configurar dominio/alojamiento, probar OAuth real, establecer copias de seguridad, recuperación y políticas de privacidad/retención. El borrado elimina la base activa; configura la retención de copias en Turso. Las tarjetas descargadas por terceros no se pueden revocar, pero sus QR siempre consultan la privacidad actual del servidor.
+- **Operación real:** publicado en [chedex.app](https://chedex.app), con Turso y acceso real de Lichess comprobados con `AndresLi`. Quedan por establecer copias de seguridad, recuperación y políticas de privacidad/retención. El borrado elimina datos de la base activa; configura la retención de copias en Turso. Las tarjetas descargadas por terceros no se pueden revocar, pero sus QR siempre consultan la privacidad actual del servidor.
 - Monetización y nuevos diseños premium quedan fuera de esta versión; los tres diseños incluidos son gratuitos.
 
 ## Validación
@@ -62,3 +66,5 @@ npm test
 ```
 
 Las pruebas cubren validación de entradas, privacidad pública, aislamiento entre cuentas, CRUD, QR, invalidación de enlaces, exportación y borrado de datos relacionados. Usan una base temporal; no acceden a Turso ni Lichess.
+
+También comprueban PKCE, estados OAuth caducados/reutilizados, persistencia entre accesos, identidad administradora y generación de pases firmados con certificados sintéticos. Para validar el paquete de Cloudflare: `npm run deploy:check`.

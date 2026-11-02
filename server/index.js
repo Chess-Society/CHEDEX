@@ -5,18 +5,24 @@ import { fileURLToPath } from 'node:url';
 import { openDatabase } from './db.js';
 import { defaults, profileInput, entryInput, statistics, publicView, InputError } from './domain.js';
 import QRCode from 'qrcode';
+import { lichessAuth, isAdministrator } from './auth.js';
+import { createAppleWallet } from './apple-wallet.js';
 
+export async function createApplication(options={}) {
 const port = Number(process.env.PORT || 3000);
 const origin = new URL(process.env.APP_URL || `http://127.0.0.1:${port}`).origin;
 const production = process.env.NODE_ENV === 'production';
 if (production && !origin.startsWith('https://')) throw new Error('APP_URL debe usar HTTPS en producción.');
 const demoEnabled = !production && process.env.ENABLE_DEMO === 'true' && ['localhost','127.0.0.1'].includes(new URL(origin).hostname);
-const db = await openDatabase();
+const db = options.database || await openDatabase({localFactory:options.localFactory});
+const auth=lichessAuth({db,origin,clientId:process.env.LICHESS_CLIENT_ID||'chedex'});
+const apple=createAppleWallet(process.env,origin);
+await apple.initialize();
 const secret = () => randomBytes(32).toString('base64url');
 const hash = s => createHash('sha256').update(s).digest('hex');
 const cookie = (name,value,age) => `${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${age}${origin.startsWith('https:')?'; Secure':''}`;
 const cookies = req => Object.fromEntries((req.headers.cookie||'').split(';').filter(s=>s.includes('=')).map(s=>{const i=s.indexOf('=');return [s.slice(0,i).trim(),s.slice(i+1)];}));
-const userRow = r => r ? {id:r.id, publicId:r.public_id, demo:!!r.demo, profile:JSON.parse(r.profile)} : null;
+const userRow = r => r ? {id:r.id, publicId:r.public_id, demo:!!r.demo, profile:JSON.parse(r.profile),lichessId:r.lichess_id} : null;
 const findUser = async id => userRow((await db('SELECT * FROM users WHERE id=?',[id]))[0]);
 const entriesFor = async id => (await db('SELECT id,kind,data FROM entries WHERE user_id=?',[id])).map(r=>({...r,data:JSON.parse(r.data)})).sort((a,b)=>b.data.date.localeCompare(a.data.date));
 async function sessionUser(req) {
@@ -72,33 +78,22 @@ const server=createServer(async(req,res)=>{
     if(!['GET','HEAD'].includes(req.method)) {
       if(req.headers.origin!==origin || req.headers['x-chedex-request']!=='1') return json(res,403,{error:'Solicitud no autorizada.'});
     }
-    if(path==='/api/config' && req.method==='GET')return json(res,200,{demoEnabled,wallet:{apple:false,google:false}});
+    if(path==='/healthz' && req.method==='GET'){await db('SELECT 1');return json(res,200,{status:'ok'});}
+    if(path==='/api/config' && req.method==='GET')return json(res,200,{demoEnabled,wallet:{apple:apple.status().ready,appleReason:apple.status().reason,google:false}});
     if(path==='/auth/lichess' && req.method==='GET') {
-      const state=secret(), verifier=secret();
-      await db('DELETE FROM oauth WHERE expires<?',[Date.now()]);
-      await db('INSERT INTO oauth VALUES(?,?,?)',[hash(state),verifier,Date.now()+600000]);
-      res.setHeader('Set-Cookie',cookie('chedex_oauth',state,600));
-      const u=new URL('https://lichess.org/oauth');
-      u.search=new URLSearchParams({response_type:'code',client_id:process.env.LICHESS_CLIENT_ID||'chedex',redirect_uri:`${origin}/auth/callback`,state,code_challenge:createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256',scope:''}).toString();
-      return redirect(res,u.href);
+      const login=await auth.begin();
+      res.setHeader('Set-Cookie',cookie('chedex_oauth',login.state,600));
+      return redirect(res,login.url);
     }
     if(path==='/auth/callback' && req.method==='GET') {
-      const q=new URL(req.url,origin).searchParams, state=q.get('state');
-      if(!state || state!==cookies(req).chedex_oauth) return redirect(res,'/?auth=error');
-      const saved=(await db('DELETE FROM oauth WHERE state=? AND expires>? RETURNING verifier',[hash(state),Date.now()]))[0];
       res.setHeader('Set-Cookie',cookie('chedex_oauth','',0));
-      if(!saved || !q.get('code') || q.has('error')) return redirect(res,'/?auth=error');
-      const tokenRes=await fetch('https://lichess.org/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',code:q.get('code'),code_verifier:saved.verifier,client_id:process.env.LICHESS_CLIENT_ID||'chedex',redirect_uri:`${origin}/auth/callback`}),signal:AbortSignal.timeout(15000)});
-      if(!tokenRes.ok)return redirect(res,'/?auth=error');
-      const token=await tokenRes.json();
-      const accountRes=await fetch('https://lichess.org/api/account',{headers:{Authorization:`Bearer ${token.access_token}`},signal:AbortSignal.timeout(15000)});
-      if(!accountRes.ok)return redirect(res,'/?auth=error');
-      const account=await accountRes.json();
-      if(typeof account.id!=='string' || !account.id)return redirect(res,'/?auth=error');
-      let user=userRow((await db('SELECT * FROM users WHERE lichess_id=?',[account.id]))[0]);
-      if(!user){const p=defaults(account.username||account.id);p.lichess=`https://lichess.org/@/${encodeURIComponent(account.id)}`;await db('INSERT INTO users VALUES(?,?,?,?,?,?)',[randomUUID(),account.id,secret().slice(0,16),JSON.stringify(p),0,new Date().toISOString()]);user=userRow((await db('SELECT * FROM users WHERE lichess_id=?',[account.id]))[0]);}
-      // El token de Lichess se usa solo para identificar la cuenta y no se almacena.
-      await makeSession(res,user);return redirect(res,'/app');
+      try {
+        const row=await auth.complete(new URL(req.url,origin).searchParams,cookies(req).chedex_oauth);
+        const previous=cookies(req).chedex;
+        if(previous)await db('DELETE FROM sessions WHERE token=?',[hash(previous)]);
+        await makeSession(res,userRow(row));
+        return redirect(res,'/app');
+      } catch { return redirect(res,'/?auth=error'); }
     }
     if(path==='/api/demo' && req.method==='POST') {if(!demoEnabled)return json(res,404,{error:'No disponible.'});await createDemo(res);return json(res,200,{ok:true});}
     if(path.startsWith('/api/public/') && req.method==='GET') {
@@ -109,7 +104,22 @@ const server=createServer(async(req,res)=>{
     if(path.startsWith('/api/')) {
       const user=await sessionUser(req);
       if(!user)return json(res,401,{error:'Inicia sesión para continuar.'});
-      if(path==='/api/me' && req.method==='GET'){const entries=await entriesFor(user.id);return json(res,200,{...user,entries,stats:statistics(entries),publicUrl:`${origin}/p/${user.publicId}`});}
+      if(path==='/api/me' && req.method==='GET'){const entries=await entriesFor(user.id);return json(res,200,{...user,isAdmin:isAdministrator(user),entries,stats:statistics(entries),publicUrl:`${origin}/p/${user.publicId}`});}
+      if(path==='/api/admin' && req.method==='GET') {
+        if(!isAdministrator(user))return json(res,403,{error:'Esta sección está reservada a la administración.'});
+        const users=await db('SELECT COUNT(*) AS total FROM users WHERE demo=0');
+        const records=await db('SELECT e.kind,COUNT(*) AS total FROM entries e JOIN users u ON u.id=e.user_id WHERE u.demo=0 GROUP BY e.kind');
+        return json(res,200,{users:Number(users[0].total),records:Object.fromEntries(records.map(r=>[r.kind,Number(r.total)])),database:process.env.TURSO_DATABASE_URL?'Turso':'Local',apple:apple.status(),https:origin.startsWith('https://'),callback:origin+'/auth/callback'});
+      }
+      if(path==='/api/wallet/apple' && req.method==='GET') {
+        if(!publicView(user,[]))return json(res,409,{error:'Activa tu perfil público antes de añadirlo a Apple Wallet.'});
+        if(!apple.status().ready)return json(res,503,{error:'Apple Wallet está pendiente de configuración. No se ha emitido ningún pase.'});
+        try {
+          const buffer=apple.issue(user);
+          res.writeHead(200,{'Content-Type':'application/vnd.apple.pkpass','Content-Disposition':'attachment; filename="chedex.pkpass"'});
+          return res.end(buffer);
+        } catch {return json(res,503,{error:'No se pudo firmar el pase de Apple. Inténtalo más tarde.'});}
+      }
       if(path==='/api/profile' && req.method==='PUT') {
         const p=profileInput(await body(req),user.profile);
         if(user.demo && p.public)throw new InputError('La demo no permite publicar perfiles. Accede con Lichess para crear el tuyo.');
@@ -156,7 +166,7 @@ const server=createServer(async(req,res)=>{
     const asset=assets.get(path);
     if(!asset && path!=='/' && path!=='/app' && !/^\/p\/[A-Za-z0-9_-]{16}$/.test(path))return json(res,404,{error:'Página no encontrada.'});
     const [file,type]=asset||['index.html','text/html'];
-    const content=await readFile(fileURLToPath(new URL(`../public/${file}`,import.meta.url)));
+    const content=options.readAsset?await options.readAsset(file):await readFile(fileURLToPath(new URL(`../public/${file}`,import.meta.url)));
     res.writeHead(200,{'Content-Type':`${type}; charset=utf-8`});res.end(req.method==='HEAD'?undefined:content);
   } catch(e) {if(e instanceof InputError)return json(res,400,{error:e.message});console.error('Solicitud fallida:',e.name);if(!res.headersSent)json(res,500,{error:'No se pudo completar la operación. Inténtalo de nuevo.'});else res.end();}
 });
@@ -164,4 +174,5 @@ const server=createServer(async(req,res)=>{
 await db('DELETE FROM sessions WHERE expires<?',[Date.now()]);
 await db('DELETE FROM oauth WHERE expires<?',[Date.now()]);
 await db('DELETE FROM users WHERE demo=1 AND created_at<?',[new Date(Date.now()-86400000).toISOString()]);
-server.listen(port,production?'0.0.0.0':'127.0.0.1',()=>console.log(`Chedex disponible en ${origin}`));
+return server;
+}
