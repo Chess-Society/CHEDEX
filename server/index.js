@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { openDatabase } from './db.js';
 import { defaults, profileInput, entryInput, statistics, publicView, InputError } from './domain.js';
 import QRCode from 'qrcode';
+import { parseAppPath } from '../public/navigation.js';
 import { lichessAuth, isAdministrator } from './auth.js';
 import { createAppleWallet } from './apple-wallet.js';
 
@@ -52,7 +53,7 @@ function rateLimit(req,res) {
   if(++v.n>180){res.setHeader('Retry-After','60');json(res,429,{error:'Demasiadas solicitudes. Espera un minuto.'});return true;}return false;
 }
 async function createDemo(res) {
-  const id=randomUUID(), p=defaults('Alex Martín');
+  const id=randomUUID(), p=defaults('TopChess');
   Object.assign(p,{bio:'Cada partida cuenta una historia. Construyendo la mía, un movimiento a la vez.',club:'Club de Ajedrez Horizonte',country:'España',city:'Madrid',started:2016,fideStandard:1842,fideRapid:1910,fideBlitz:1785,adultConfirmed:true});
   await db('INSERT INTO users VALUES(?,?,?,?,?,?)',[id,`demo-${id}`,secret().slice(0,16),JSON.stringify(p),1,new Date().toISOString()]);
   for(const v of [
@@ -63,7 +64,7 @@ async function createDemo(res) {
   ]) await db('INSERT INTO entries VALUES(?,?,?,?)',[randomUUID(),id,v.kind,JSON.stringify(entryInput(v.kind,v))]);
   await makeSession(res,await findUser(id));
 }
-const assets = new Map([['/landing.js',['landing.js','text/javascript']],['/landing.css',['landing.css','text/css']],['/landing-qr.svg',['landing-qr.svg','image/svg+xml']],['/app.js',['app.js','text/javascript']],['/style.css',['style.css','text/css']],['/design.css',['design.css','text/css']],['/favicon.svg',['favicon.svg','image/svg+xml']]]);
+const assets = new Map([['/navigation.js',['navigation.js','text/javascript']],['/landing.js',['landing.js','text/javascript']],['/landing.css',['landing.css','text/css']],['/landing-qr.svg',['landing-qr.svg','image/svg+xml']],['/app.js',['app.js','text/javascript']],['/style.css',['style.css','text/css']],['/design.css',['design.css','text/css']],['/favicon.svg',['favicon.svg','image/svg+xml']]]);
 const server=createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
@@ -164,7 +165,7 @@ const server=createServer(async(req,res)=>{
     }
     if(!['GET','HEAD'].includes(req.method))return json(res,405,{error:'Método no permitido.'});
     const asset=assets.get(path);
-    if(!asset && path!=='/' && path!=='/app' && !/^\/p\/[A-Za-z0-9_-]{16}$/.test(path))return json(res,404,{error:'Página no encontrada.'});
+    if(!asset && path!=='/' && !parseAppPath(path) && !/^\/p\/[A-Za-z0-9_-]{16}$/.test(path))return json(res,404,{error:'Página no encontrada.'});
     const [file,type]=asset||['index.html','text/html'];
     const content=options.readAsset?await options.readAsset(file):await readFile(fileURLToPath(new URL(`../public/${file}`,import.meta.url)));
     res.writeHead(200,{'Content-Type':`${type}; charset=utf-8`});res.end(req.method==='HEAD'?undefined:content);

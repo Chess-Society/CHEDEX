@@ -10,7 +10,7 @@
     "dev": "node --env-file-if-exists=.env --watch server/local.js",
     "start": "node --env-file-if-exists=.env server/local.js",
     "test": "node --test",
-    "check": "node --check server/index.js && node --check server/domain.js && node --check server/auth.js && node --check server/apple-wallet.js && node --check public/app.js && node --check public/landing.js",
+    "check": "node --check server/index.js && node --check server/domain.js && node --check server/auth.js && node --check server/apple-wallet.js && node --check public/app.js && node --check public/landing.js && node --check public/navigation.js",
     "deploy:check": "wrangler deploy --dry-run --outdir .worker-build",
     "deploy": "wrangler deploy"
   },

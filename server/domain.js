@@ -25,7 +25,11 @@ export function profileInput(input, previous) {
   for (const k of ['fideStandard','fideRapid','fideBlitz']) if (k in input) p[k] = integer(input[k], 4000) ?? '';
   if ('started' in input) { p.started = integer(input.started, new Date().getFullYear()) ?? ''; if (p.started !== '' && p.started < 1800) throw new InputError('Revisa el año de inicio.'); }
   if ('role' in input) { if (!['player','coach','club','organizer'].includes(input.role)) throw new InputError('Tipo de perfil no válido.'); p.role = input.role; }
-  if ('theme' in input) { if (!['midnight','violet','forest'].includes(input.theme)) throw new InputError('Diseño no válido.'); p.theme = input.theme; }
+  if ('theme' in input) {
+    if (!['midnight','violet','forest'].includes(input.theme)) throw new InputError('Diseño no válido.');
+    if (input.theme !== 'midnight' && input.theme !== previous.theme) throw new InputError('Los colores y diseños adicionales estarán disponibles en una futura opción de pago.');
+    p.theme = input.theme;
+  }
   if ('adultConfirmed' in input && input.adultConfirmed === true) p.adultConfirmed = true;
   if ('public' in input) { if (typeof input.public !== 'boolean') throw new InputError('Privacidad no válida.'); p.public = input.public; }
   if ('visibility' in input) {

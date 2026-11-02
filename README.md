@@ -2,7 +2,7 @@
 
 **Tu historia en el ajedrez, siempre contigo.** Un proyecto impulsado por **TopChess**.
 
-Primera implementación del pasaporte ajedrecístico: interfaz responsive en español, tarjeta con tres diseños, modo claro/oscuro, historial manual y privacidad por secciones. Sin funciones de red social ni IA.
+Primera implementación del pasaporte ajedrecístico: interfaz responsive en español, tarjeta con diseño Chedex, modo claro/oscuro, historial manual y privacidad por secciones. Sin funciones de red social ni IA.
 
 ## Ejecutar
 
@@ -20,13 +20,13 @@ En PowerShell: `Copy-Item .env.example .env`. Abre http://127.0.0.1:3000. La dem
 
 - Inicio público y acceso Lichess con OAuth PKCE, estado de un solo uso y cookie vinculada al navegador. Sin contraseñas propias; no se almacena el token de Lichess.
 - Perfil editable: alias, avatar, tipo de usuario, biografía, club, escuela, localidad, año, Elo por modalidad, título declarado, enlaces y contacto.
-- Tarjeta personalizable, QR real, enlace persistente, compartir y descarga PNG. El PNG utiliza únicamente la proyección pública.
+- Tarjeta digital, QR real, enlace persistente, compartir y descarga PNG. El PNG utiliza únicamente la proyección pública.
 - Torneos y logros: crear, editar, eliminar, fuentes y orden cronológico. Estadísticas de puntuación, actividad por años/modalidades y evolución de Elo declarado por modalidad.
 - Consulta pública sin cuenta, favoritos privados y apertura de perfiles mediante su enlace. Los QR pueden escanearse con la cámara del móvil.
 - Perfil privado y contacto oculto por defecto. Visibilidad por secciones, invalidación del enlace, exportación JSON, cierre de sesión y eliminación transaccional de datos.
 - Estados calculados por el servidor: Declarado y Con fuente. Ningún formulario permite otorgar Verificado.
 - Primeros pasos guiados y campos opcionales agrupados para mantener cortos los formularios móviles.
-- Landing pública con tarjeta de ejemplo interactiva, recorrido visual, explicación de privacidad y preguntas frecuentes. La portada `/` también es visible con sesión iniciada; el espacio personal permanece en `/app`.
+- Landing pública con tarjeta de ejemplo interactiva, recorrido visual, explicación de privacidad y preguntas frecuentes. La portada `/` también es visible con sesión iniciada; el espacio personal utiliza rutas como `/app/tarjeta` y `/app/historial/torneos`, sin hashes.
 - Administración para la identidad de Lichess **AndresLi**, validada por el servidor. El alias editable no concede permisos; el panel muestra contadores y configuración sin revelar historiales privados.
 
 ## Turso y producción
@@ -57,7 +57,7 @@ Referencias oficiales: [OAuth de Lichess](https://lichess.org/api#section/Authen
 - **Verificación oficial:** no habilitada; títulos y Elo son declarados, incluso con enlace. El futuro procedimiento autorizado deberá registrar origen y fecha de confirmación.
 - **Partidas PGN:** futuras. No se inventan partidas ni resultados individuales a partir de puntuaciones de torneos.
 - **Operación real:** publicado en [chedex.app](https://chedex.app), con Turso y acceso real de Lichess comprobados con `AndresLi`. Quedan por establecer copias de seguridad, recuperación y políticas de privacidad/retención. El borrado elimina datos de la base activa; configura la retención de copias en Turso. Las tarjetas descargadas por terceros no se pueden revocar, pero sus QR siempre consultan la privacidad actual del servidor.
-- Monetización y nuevos diseños premium quedan fuera de esta versión; los tres diseños incluidos son gratuitos.
+- Los colores y diseños adicionales están previstos como una futura opción de pago. Por ahora se ofrece el diseño Chedex, sin precios, planes ni cobros habilitados.
 
 ## Validación
 

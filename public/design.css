@@ -41,7 +41,7 @@ h1,h2,h3 {font-weight:750;letter-spacing:-.045em}
 .brand-dot {color:inherit}
 .panel {border:2px solid var(--edge);border-radius:24px;box-shadow:var(--shadow)}
 .btn {min-height:48px;padding:12px 19px;border:2px solid var(--edge);border-radius:16px;background:var(--surface);font-size:13px;font-weight:720;box-shadow:0 4px 0 var(--edge);transition:transform .12s,box-shadow .12s,background .12s}
-.btn:hover {background:var(--soft);transform:translateY(-1px);box-shadow:0 5px 0 var(--edge)}
+.btn:hover {background:var(--soft);transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
 .btn:active {transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
 .btn.primary,.btn.primary:hover {background:var(--raised);color:var(--button-ink);border-color:var(--edge)}
 .btn.violet {background:var(--soft);color:var(--ink);border:2px solid var(--edge)}

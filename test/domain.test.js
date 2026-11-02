@@ -5,6 +5,14 @@ test('perfil privado por defecto y publicación solo tras confirmar mayoría de 
   const p=defaults('Ana');assert.equal(p.public,false);assert.equal(p.visibility.contact,false);
   assert.throws(()=>profileInput({public:true},p));assert.equal(profileInput({public:true,adultConfirmed:true},p).public,true);
 });
+test('diseños adicionales quedan pendientes sin alterar diseños anteriores',()=>{
+  const p=defaults('Ana');
+  assert.throws(()=>profileInput({theme:'violet'},p),/futura opción de pago/);
+  assert.equal(profileInput({theme:'midnight'},p).theme,'midnight');
+  const previous={...p,theme:'forest'};
+  assert.equal(profileInput({name:'Nuevo nombre'},previous).theme,'forest');
+  assert.equal(profileInput({theme:'forest'},previous).theme,'forest');
+});
 test('el propietario no puede declarar una verificación',()=>{
   const entry=entryInput('achievements',{name:'Mi título',date:'2026-01-01',status:'Verificado',source:'https://example.org/results'});
   assert.equal(entry.status,'Con fuente');assert.equal(entryInput('achievements',{name:'Mi título',date:'2026-01-01',status:'Verificado'}).status,'Declarado');

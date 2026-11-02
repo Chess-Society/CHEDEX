@@ -21,6 +21,7 @@ before(async()=>{
 after(async()=>{db?.close();if(child&&child.exitCode===null){child.kill();await new Promise(resolve=>child.once('exit',resolve));}if(folder)await rm(folder,{recursive:true,force:true});});
 test('seguridad, privacidad, CRUD, enlace, QR y borrado completo',async()=>{
   assert.equal((await req('/healthz')).status,200);
+  for(const path of ['/app/tarjeta','/app/cuenta','/app/perfiles','/app/historial/torneos','/app/historial/logros','/app/historial/estadisticas','/app/historial/partidas'])assert.equal((await req(path)).status,200,path);
   assert.equal((await req('/api/admin')).status,403);
   assert.equal((await req('/api/profile','PUT',{name:'AndresLi',isAdmin:true})).status,200);
   assert.equal((await (await req('/api/me')).json()).isAdmin,false);
