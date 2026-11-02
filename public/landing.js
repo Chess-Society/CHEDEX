@@ -32,7 +32,7 @@ export function renderLanding({brand,icon,card,btn,loggedIn,demoEnabled}){
     <header class="home-header"><div class="home-header-inner">${brand()}<nav aria-label="Navegación pública"><a href="/" data-action="home-scroll" data-target="como-funciona">Cómo funciona</a><a href="/" data-action="home-scroll" data-target="tu-privacidad">Tu privacidad</a><a href="/" data-action="home-scroll" data-target="preguntas">Preguntas</a><a class="home-enter" href="${destination}">${loggedIn?'Mi espacio':'Entrar'}</a>${cta(loggedIn?'Mi Chedex':'Crear mi Chedex','home-header-cta')}</nav></div></header>
     <main id="main">
       <section class="home-hero" aria-labelledby="home-title"><div class="home-hero-copy"><div class="home-eyebrow"><span></span>Tu pasaporte ajedrecístico</div><h1 id="home-title">Tu historia.<br><span>Siempre<br class="home-mobile-break"> contigo.</span></h1><p>Tu primera competición. Tu club de siempre. Lo que aún está por llegar. Un lugar para guardar tu camino en el ajedrez y una tarjeta para llevarlo contigo.</p><div class="home-hero-actions">${cta(loggedIn?'Ir a mi Chedex':'Crear mi Chedex')}<a class="btn home-secondary" href="/" data-action="home-scroll" data-target="como-funciona">Descubrir Chedex ${icon('arrow')}</a></div><div class="home-reassurance"><span>${icon('check')}Gratuito</span><span>${icon('check')}Sin Elo mínimo</span><span>${icon('lock')}Privado por defecto</span></div><a class="home-scroll" href="/" data-action="home-scroll" data-target="como-funciona">Prueba la tarjeta. Después, baja.${icon('download')}</a></div>
-      <div class="home-hero-demo" aria-label="Demostración de una tarjeta Chedex"><div class="home-demo-top"><span class="home-live-dot"></span>Una tarjeta. Toda una historia.<span class="home-example">EJEMPLO</span></div><div id="home-card-preview">${card(sample,'EJEMPLO1-CHEDEx',false)}</div><div id="home-card-back" class="home-card-back" hidden><img src="/landing-qr.svg" alt="QR de demostración que abre la portada de Chedex"><strong>Tu historia, a un escaneo.</strong><p>El QR de tu tarjeta abrirá tu perfil público.<br>Este ejemplo abre la portada de Chedex.</p></div><div class="home-demo-controls"><span class="home-card-design-label">Diseño Chedex</span><button class="home-turn" data-action="home-turn" aria-pressed="false">${icon('qr')}Ver el QR</button></div><div class="home-demo-caption">Mueve el cursor sobre la tarjeta o consulta su reverso.</div><div class="home-moment"><span>${icon('trophy')}</span><div><strong>Un nuevo capítulo.</strong><small>Tu primer torneo ya tiene su lugar.</small></div>${icon('check')}</div><p class="home-example-note">Tarjeta y recorrido ilustrativos. Sin datos de usuarios reales.</p></div>
+      <div class="home-hero-demo" aria-label="Demostración de una tarjeta Chedex"><div class="home-demo-top"><span class="home-live-dot"></span>Una tarjeta. Toda una historia.<span class="home-example">EJEMPLO</span></div><div id="home-card-preview">${card(sample,'EJEMPLO1-CHEDEx',false)}</div><div id="home-card-back" class="home-card-back" hidden><img src="/landing-qr.svg" alt="QR de demostración que abre la portada de Chedex"><strong>Tu historia, a un escaneo.</strong><p>El QR de tu tarjeta abrirá tu perfil público.<br>Este ejemplo abre la portada de Chedex.</p></div><div class="home-demo-controls"><span class="home-card-design-label">Diseño Chedex</span><button class="home-turn" data-action="home-turn" aria-pressed="false">${icon('qr')}Ver el QR</button></div><div class="home-demo-caption">Arrastra la tarjeta con el ratón para girarla o consulta su reverso.</div><div class="home-moment"><span>${icon('trophy')}</span><div><strong>Un nuevo capítulo.</strong><small>Tu primer torneo ya tiene su lugar.</small></div>${icon('check')}</div><p class="home-example-note">Tarjeta y recorrido ilustrativos. Sin datos de usuarios reales.</p></div>
       </section>
       <div class="home-everyone"><span>EL AJEDREZ ES DE TODOS.</span><p>Tu historia también tiene sitio.</p><div><span>${icon('chess')}Aficionados y federados</span><span>${icon('users')}Entrenadores</span><span>${icon('shield')}Clubes y escuelas</span><span>${icon('trophy')}Organizadores</span></div></div>
       <section class="home-journey" id="como-funciona" aria-labelledby="home-journey-title"><div class="home-section-intro"><span class="home-eyebrow">DE LA PRIMERA PARTIDA A TODO LO QUE VIENE</span><h2 id="home-journey-title">Lo que juegas pasa.<br><span>Tu historia se queda.</span></h2><p>No hace falta tener una gran trayectoria para empezar a guardarla.</p></div><div class="home-walkthrough"><div class="home-story-steps">${steps.map(([num,title,description],i)=>`<article class="home-story-step ${i===0?'is-active':''}" data-home-step="${i}"><span class="home-step-number">${num} <span>/</span> TU HISTORIA</span><h3>${title}</h3><p>${description}</p><div class="home-step-mobile home-story-preview">${preview(i,icon)}<span class="home-sample-label">Ejemplo ilustrativo</span></div></article>`).join('')}</div><div class="home-story-stage"><div class="home-stage-shell"><div class="home-stage-bar"><span>ASÍ SE VE EN CHEDEX</span><span class="home-example">EJEMPLO</span></div>${steps.map((_,i)=>`<div class="home-stage-view home-story-preview" data-home-view="${i}" ${i?'hidden':''}>${preview(i,icon)}</div>`).join('')}<div class="home-stage-progress" aria-label="Explorar el recorrido">${steps.map(([num,,],i)=>`<button data-action="home-step" data-step="${i}" class="${i===0?'selected':''}" aria-label="Ver paso ${i+1}" aria-pressed="${i===0?'true':'false'}">${num}</button>`).join('')}</div></div><p class="home-stage-caption">Tu identidad. Tus torneos. Tus logros. A tu manera.</p></div></div></section>
@@ -52,37 +52,56 @@ function activate(step){
 function setupCardMotion(){
   const card=document.querySelector('#home-card-preview .chess-card');
   if(!card || typeof card.animate!=='function')return ()=>{};
-  const reduced=matchMedia('(prefers-reduced-motion: reduce)'),fine=matchMedia('(hover: hover) and (pointer: fine)');
-  let floating,tilt,frame=0,pointer,hovering=false,visible=true;
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  let floating,tilt,drag,frame=0,visible=true,suppressClick=false,angleX=0,angleY=0;
   const sync=()=>{
-    floating?.cancel();floating=undefined;tilt?.cancel();tilt=undefined;cancelAnimationFrame(frame);frame=0;
+    floating?.cancel();floating=undefined;
     if(reduced.matches)return;
     floating=card.animate([
-      {transform:'perspective(1100px) rotateX(3deg) rotateY(-5deg) translateY(0px)'},
+      {transform:'perspective(1100px) rotateX(3deg) rotateY(-5deg)'},
       {transform:'perspective(1100px) rotateX(-2deg) rotateY(4deg) translateY(-8px)'},
-      {transform:'perspective(1100px) rotateX(3deg) rotateY(-5deg) translateY(0px)'}
+      {transform:'perspective(1100px) rotateX(3deg) rotateY(-5deg)'}
     ],{duration:7600,iterations:Infinity,easing:'ease-in-out'});
-    if(!visible)floating.pause();
+    if(!visible||drag||tilt)floating.pause();
+  };
+  const down=event=>{
+    if(event.pointerType!=='mouse'||event.button!==0)return;
+    event.preventDefault();suppressClick=false;
+    drag={id:event.pointerId,x:event.clientX,y:event.clientY,dx:0,dy:0,startX:angleX,startY:angleY};
+    floating?.pause();card.setPointerCapture(event.pointerId);card.classList.add('is-dragging');
   };
   const move=event=>{
-    if(reduced.matches||!fine.matches||event.pointerType==='touch')return;
-    pointer={x:event.clientX,y:event.clientY};hovering=true;floating?.pause();
+    if(!drag||event.pointerId!==drag.id)return;
+    drag.dx=event.clientX-drag.x;drag.dy=event.clientY-drag.y;
+    if(Math.hypot(drag.dx,drag.dy)>4)suppressClick=true;
     if(frame)return;
     frame=requestAnimationFrame(()=>{
-      frame=0;const rect=card.getBoundingClientRect();
-      const x=Math.max(-1,Math.min(1,(pointer.x-rect.left)/rect.width*2-1));
-      const y=Math.max(-1,Math.min(1,(pointer.y-rect.top)/rect.height*2-1));
-      tilt?.cancel();
-      tilt=card.animate([{transform:`perspective(1100px) rotateX(${-y*6}deg) rotateY(${x*8}deg) translateY(-4px)`}],{duration:240,fill:'forwards',easing:'ease-out'});
+      frame=0;if(!drag)return;
+      const x=Math.max(-35,Math.min(35,drag.startY+drag.dx*.18));
+      const y=Math.max(-25,Math.min(25,drag.startX-drag.dy*.18));
+      angleX=y;angleY=x;tilt?.cancel();
+      tilt=card.animate([{transform:`perspective(1100px) rotateX(${y}deg) rotateY(${x}deg)`}],{duration:1,fill:'forwards'});
     });
   };
-  const leave=()=>{hovering=false;cancelAnimationFrame(frame);frame=0;tilt?.cancel();if(visible&&!reduced.matches)floating?.play();};
+  const up=event=>{
+    if(!drag||event.pointerId!==drag.id)return;
+    drag=undefined;card.classList.remove('is-dragging');
+    if(card.hasPointerCapture(event.pointerId))card.releasePointerCapture(event.pointerId);
+  };
+  const leave=()=>{
+    if(drag)return;
+    tilt?.cancel();tilt=undefined;angleX=0;angleY=0;
+    if(visible&&!reduced.matches)floating?.play();
+  };
+  const click=event=>{if(suppressClick){event.preventDefault();event.stopPropagation();suppressClick=false;}};
   const visibility=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{
     visible=entries[0].isIntersecting;
-    if(visible&&!hovering&&!reduced.matches)floating?.play();else floating?.pause();
+    if(visible&&!drag&&!tilt&&!reduced.matches)floating?.play();else floating?.pause();
   });
-  visibility?.observe(card);card.addEventListener('pointermove',move);card.addEventListener('pointerleave',leave);reduced.addEventListener('change',sync);sync();
-  return ()=>{floating?.cancel();tilt?.cancel();cancelAnimationFrame(frame);visibility?.disconnect();card.removeEventListener('pointermove',move);card.removeEventListener('pointerleave',leave);reduced.removeEventListener('change',sync);};
+  const events={pointerdown:down,pointermove:move,pointerup:up,pointercancel:up,lostpointercapture:up,pointerleave:leave};
+  visibility?.observe(card);for(const [name,handler] of Object.entries(events))card.addEventListener(name,handler);
+  card.addEventListener('click',click,true);reduced.addEventListener('change',sync);sync();
+  return ()=>{floating?.cancel();tilt?.cancel();cancelAnimationFrame(frame);visibility?.disconnect();for(const [name,handler] of Object.entries(events))card.removeEventListener(name,handler);card.removeEventListener('click',click,true);reduced.removeEventListener('change',sync);};
 }
 export function mountLanding(){
   observer?.disconnect();

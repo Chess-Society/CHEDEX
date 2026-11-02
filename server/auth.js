@@ -3,7 +3,7 @@ import { defaults } from './domain.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const random = () => randomBytes(32).toString('base64url');
-const matches = (a,b) => typeof a==='string' && typeof b==='string' && a.length===b.length && timingSafeEqual(Buffer.from(a),Buffer.from(b));
+const matches = (a,b) => typeof a==='string' && typeof b==='string' && Buffer.byteLength(a)===Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a),Buffer.from(b));
 export function isAdministrator(user, ids = process.env.LICHESS_ADMIN_IDS || 'andresli') {
   return !user.demo && typeof user.lichessId==='string' && ids.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean).includes(user.lichessId.toLowerCase());
 }

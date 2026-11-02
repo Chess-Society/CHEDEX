@@ -8,6 +8,7 @@ import QRCode from 'qrcode';
 import { parseAppPath } from '../public/navigation.js';
 import { lichessAuth, isAdministrator } from './auth.js';
 import { createAppleWallet } from './apple-wallet.js';
+import { sessionCookies, readJson as body } from './security.js';
 
 export async function createApplication(options={}) {
 const port = Number(process.env.PORT || 3000);
@@ -21,13 +22,13 @@ const apple=createAppleWallet(process.env,origin);
 await apple.initialize();
 const secret = () => randomBytes(32).toString('base64url');
 const hash = s => createHash('sha256').update(s).digest('hex');
-const cookie = (name,value,age) => `${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${age}${origin.startsWith('https:')?'; Secure':''}`;
+const {serialize:cookie,name:cookieName}=sessionCookies(origin);
 const cookies = req => Object.fromEntries((req.headers.cookie||'').split(';').filter(s=>s.includes('=')).map(s=>{const i=s.indexOf('=');return [s.slice(0,i).trim(),s.slice(i+1)];}));
 const userRow = r => r ? {id:r.id, publicId:r.public_id, demo:!!r.demo, profile:JSON.parse(r.profile),lichessId:r.lichess_id} : null;
 const findUser = async id => userRow((await db('SELECT * FROM users WHERE id=?',[id]))[0]);
 const entriesFor = async id => (await db('SELECT id,kind,data FROM entries WHERE user_id=?',[id])).map(r=>({...r,data:JSON.parse(r.data)})).sort((a,b)=>b.data.date.localeCompare(a.data.date));
 async function sessionUser(req) {
-  const token = cookies(req).chedex;
+  const token = cookies(req)[cookieName('chedex')];
   if (!token) return null;
   const r = (await db('SELECT user_id FROM sessions WHERE token=? AND expires>?',[hash(token),Date.now()]))[0];
   return r ? findUser(r.user_id) : null;
@@ -40,15 +41,11 @@ async function makeSession(res,user) {
 }
 function json(res,status,data) {res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}
 function redirect(res,path) {res.writeHead(302,{Location:path});res.end();}
-async function body(req) {
-  if (!req.headers['content-type']?.startsWith('application/json')) throw new InputError('Se requiere JSON.');
-  let str=''; for await (const part of req) { str+=part; if(Buffer.byteLength(str)>500000) throw new InputError('El archivo es demasiado grande.'); }
-  try {const v=JSON.parse(str);if(!v || Array.isArray(v) || typeof v!=='object') throw new Error(); return v;} catch {throw new InputError('Datos no válidos.');}
-}
 const limits = new Map();
 function rateLimit(req,res) {
-  const key=req.socket.remoteAddress, now=Date.now();
+  const key=options.clientAddress?.(req)||req.socket.remoteAddress||'unknown', now=Date.now();
   if(limits.size>5000) for(const [k,v] of limits) if(v.reset<now) limits.delete(k);
+  if(limits.size>=5000&&!limits.has(key))limits.delete(limits.keys().next().value);
   let v=limits.get(key); if(!v||v.reset<now){v={n:0,reset:now+60000};limits.set(key,v);}
   if(++v.n>180){res.setHeader('Retry-After','60');json(res,429,{error:'Demasiadas solicitudes. Espera un minuto.'});return true;}return false;
 }
@@ -75,7 +72,7 @@ const server=createServer(async(req,res)=>{
   if(production)res.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');
   try {
     const path=new URL(req.url,origin).pathname;
-    if(path.startsWith('/api/') || path.startsWith('/auth/')) if(rateLimit(req,res))return;
+    if(path.startsWith('/api/') || path.startsWith('/auth/') || path==='/healthz') if(rateLimit(req,res))return;
     if(!['GET','HEAD'].includes(req.method)) {
       if(req.headers.origin!==origin || req.headers['x-chedex-request']!=='1') return json(res,403,{error:'Solicitud no autorizada.'});
     }
@@ -89,8 +86,8 @@ const server=createServer(async(req,res)=>{
     if(path==='/auth/callback' && req.method==='GET') {
       res.setHeader('Set-Cookie',cookie('chedex_oauth','',0));
       try {
-        const row=await auth.complete(new URL(req.url,origin).searchParams,cookies(req).chedex_oauth);
-        const previous=cookies(req).chedex;
+        const row=await auth.complete(new URL(req.url,origin).searchParams,cookies(req)[cookieName('chedex_oauth')]);
+        const previous=cookies(req)[cookieName('chedex')];
         if(previous)await db('DELETE FROM sessions WHERE token=?',[hash(previous)]);
         await makeSession(res,userRow(row));
         return redirect(res,'/app');
@@ -160,7 +157,7 @@ const server=createServer(async(req,res)=>{
           ['DELETE FROM users WHERE id=?',[user.id]]
         ]);res.setHeader('Set-Cookie',cookie('chedex','',0));return json(res,200,{ok:true});
       }
-      if(path==='/api/logout' && req.method==='POST') {await db('DELETE FROM sessions WHERE token=?',[hash(cookies(req).chedex||'')]);res.setHeader('Set-Cookie',cookie('chedex','',0));return json(res,200,{ok:true});}
+      if(path==='/api/logout' && req.method==='POST') {await db('DELETE FROM sessions WHERE token=?',[hash(cookies(req)[cookieName('chedex')]||'')]);res.setHeader('Set-Cookie',cookie('chedex','',0));return json(res,200,{ok:true});}
       return json(res,404,{error:'Recurso no encontrado.'});
     }
     if(!['GET','HEAD'].includes(req.method))return json(res,405,{error:'Método no permitido.'});
@@ -169,7 +166,7 @@ const server=createServer(async(req,res)=>{
     const [file,type]=asset||['index.html','text/html'];
     const content=options.readAsset?await options.readAsset(file):await readFile(fileURLToPath(new URL(`../public/${file}`,import.meta.url)));
     res.writeHead(200,{'Content-Type':`${type}; charset=utf-8`});res.end(req.method==='HEAD'?undefined:content);
-  } catch(e) {if(e instanceof InputError)return json(res,400,{error:e.message});console.error('Solicitud fallida:',e.name);if(!res.headersSent)json(res,500,{error:'No se pudo completar la operación. Inténtalo de nuevo.'});else res.end();}
+  } catch(e) {if(e instanceof InputError)return json(res,e.status||400,{error:e.message});console.error('Solicitud fallida:',e.name);if(!res.headersSent)json(res,500,{error:'No se pudo completar la operación. Inténtalo de nuevo.'});else res.end();}
 });
 // Los estados de acceso caducados no se conservan indefinidamente.
 await db('DELETE FROM sessions WHERE expires<?',[Date.now()]);

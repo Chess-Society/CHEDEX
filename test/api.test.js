@@ -21,6 +21,14 @@ before(async()=>{
 after(async()=>{db?.close();if(child&&child.exitCode===null){child.kill();await new Promise(resolve=>child.once('exit',resolve));}if(folder)await rm(folder,{recursive:true,force:true});});
 test('seguridad, privacidad, CRUD, enlace, QR y borrado completo',async()=>{
   assert.equal((await req('/healthz')).status,200);
+  const home=await req('/');
+  assert.equal(home.headers.get('x-frame-options'),'DENY');
+  assert.equal(home.headers.get('x-content-type-options'),'nosniff');
+  assert.equal(home.headers.get('cache-control'),'no-store');
+  assert.match(home.headers.get('content-security-policy'),/frame-ancestors 'none'/);
+  for(const path of ['/.env','/certs/signing.key','/server/auth.js','/../.env'])assert.equal((await req(path)).status,404);
+  assert.equal((await req('/api/profile','PUT',{name:'x'.repeat(500001)})).status,413);
+  assert.equal((await fetch(`${localOrigin}/api/profile`,{method:'PUT',headers:{Cookie:`chedex=${token}`,Origin:origin,'Content-Type':'application/json'},body:'{}'})).status,403);
   for(const path of ['/app/tarjeta','/app/cuenta','/app/perfiles','/app/historial/torneos','/app/historial/logros','/app/historial/estadisticas','/app/historial/partidas'])assert.equal((await req(path)).status,200,path);
   assert.equal((await req('/api/admin')).status,403);
   assert.equal((await req('/api/profile','PUT',{name:'AndresLi',isAdmin:true})).status,200);

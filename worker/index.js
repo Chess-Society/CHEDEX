@@ -5,7 +5,7 @@ let ready;
 export default {
   async fetch(request,env,ctx) {
     if(!ready)ready=(async()=>{
-      const server=await createApplication({readAsset:async file=>{
+      const server=await createApplication({clientAddress:req=>req.headers['cf-connecting-ip'],readAsset:async file=>{
         const response=await env.ASSETS.fetch(new Request(`https://assets.local/${file}`));
         if(!response.ok)throw new Error('ASSET_MISSING');
         return Buffer.from(await response.arrayBuffer());
