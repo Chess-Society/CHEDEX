@@ -63,7 +63,7 @@ async function createDemo(res) {
   ]) await db('INSERT INTO entries VALUES(?,?,?,?)',[randomUUID(),id,v.kind,JSON.stringify(entryInput(v.kind,v))]);
   await makeSession(res,await findUser(id));
 }
-const assets = new Map([['/app.js',['app.js','text/javascript']],['/style.css',['style.css','text/css']],['/design.css',['design.css','text/css']],['/favicon.svg',['favicon.svg','image/svg+xml']]]);
+const assets = new Map([['/landing.js',['landing.js','text/javascript']],['/landing.css',['landing.css','text/css']],['/landing-qr.svg',['landing-qr.svg','image/svg+xml']],['/app.js',['app.js','text/javascript']],['/style.css',['style.css','text/css']],['/design.css',['design.css','text/css']],['/favicon.svg',['favicon.svg','image/svg+xml']]]);
 const server=createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');

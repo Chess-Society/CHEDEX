@@ -26,6 +26,7 @@ En PowerShell: `Copy-Item .env.example .env`. Abre http://127.0.0.1:3000. La dem
 - Perfil privado y contacto oculto por defecto. Visibilidad por secciones, invalidación del enlace, exportación JSON, cierre de sesión y eliminación transaccional de datos.
 - Estados calculados por el servidor: Declarado y Con fuente. Ningún formulario permite otorgar Verificado.
 - Primeros pasos guiados y campos opcionales agrupados para mantener cortos los formularios móviles.
+- Landing pública con tarjeta de ejemplo interactiva, recorrido visual, explicación de privacidad y preguntas frecuentes. La portada `/` también es visible con sesión iniciada; el espacio personal permanece en `/app`.
 - Administración para la identidad de Lichess **AndresLi**, validada por el servidor. El alias editable no concede permisos; el panel muestra contadores y configuración sin revelar historiales privados.
 
 ## Turso y producción
