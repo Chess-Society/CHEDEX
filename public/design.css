@@ -296,3 +296,74 @@ body.dark .landing {background:var(--bg)}
   .landing-end h2 {font-size:25px}
   .landing-footer {font-size:10px;line-height:1.6}
 }
+
+/* Historial y formularios: lectura compacta, acciones visibles y controles de filtro. */
+.history-filters {display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:24px}
+.history-filters .field {flex:1;min-width:145px;margin:0;font-size:12px;gap:7px}
+.history-filters .field:has(input[type="search"]) {flex:2;min-width:220px}
+.history-filters .btn {margin-bottom:0;min-height:46px}
+.history-panel {padding:24px}
+.history-year {font-size:20px;margin:26px 0 4px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.history-year:first-child {margin-top:18px}
+.entry {align-items:start;flex-wrap:wrap;gap:15px}
+.entry-main {min-width:0;overflow-wrap:anywhere}
+.entry-main h3 {font-size:16px;line-height:1.5;margin-bottom:3px}
+.entry-main .pill {margin-top:8px}
+.entry-right {min-width:100px;text-align:right;padding-top:3px}
+.entry-tools {display:flex;gap:8px;flex-wrap:wrap;width:100%;padding-left:52px}
+.entry-tools .btn {min-height:38px;font-size:11px;padding:8px 12px;box-shadow:0 3px 0 var(--edge)}
+.entry-details {margin-top:14px;font-size:12px}
+.entry-details summary {cursor:pointer;color:var(--muted);font-weight:650;padding:8px 0}
+.entry-details dl {margin:8px 0 12px;display:grid;gap:10px}
+.entry-details dl>div {display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px}
+.entry-details dt {color:var(--muted)}
+.entry-details dd {margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+#history-pagination {display:flex;justify-content:center;padding-top:18px}
+#history-results[aria-busy="true"] {opacity:.65}
+.stats-scope {margin-bottom:20px}
+.metric .btn {margin-top:14px;align-self:start;font-size:11px}
+button.stat-line {width:100%;text-align:left;min-height:48px;border-radius:8px;padding:10px 8px}
+button.stat-line:hover {background:var(--bg)}
+button.stat-line strong {display:flex;align-items:center;gap:8px}
+button.stat-line .icon {width:15px;height:15px}
+.field-error {color:#e77983;font-size:12px;line-height:1.5}
+.field [aria-invalid="true"] {border-color:#c9606c}
+.undo-panel {position:fixed;z-index:110;bottom:24px;left:50%;transform:translateX(-50%);width:min(540px,calc(100% - 32px));max-height:45vh;overflow:auto;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:16px;padding:12px 18px;box-shadow:0 5px 0 var(--edge)}
+.undo-panel>div {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:5px 0;font-size:13px}
+.undo-panel span {overflow-wrap:anywhere;min-width:0}
+.undo-panel .btn {flex-shrink:0}
+.public-shell>.notice {margin-top:28px}
+@media(max-width:700px){
+  .history-filters {gap:12px}
+  .history-filters .field {min-width:calc(50% - 12px)}
+  .history-filters .field:has(input[type="search"]) {min-width:100%}
+  .history-filters>.btn {flex:1;min-height:44px}
+  .history-panel {padding:18px 15px}
+  .entry {gap:12px;position:relative}
+  .entry-icon {display:none}
+  .entry-main {flex:1;min-width:140px}
+  .entry-right {min-width:65px;font-size:19px}
+  .entry-tools {padding-left:0;gap:7px}
+  .entry-tools .btn {flex:1;min-height:44px;font-size:11px;padding:8px}
+  .entry-details dl>div {grid-template-columns:90px minmax(0,1fr)}
+  .undo-panel {bottom:85px}
+}
+
+@media(min-width:701px){
+  .history-filters {display:grid;grid-template-columns:minmax(220px,1.6fr) repeat(3,minmax(155px,1fr));align-items:end}
+  .history-filters .field {min-width:0}
+  .history-filters .field:has(input[type="search"]) {min-width:0}
+  .history-filters>.btn {justify-self:start}
+}
+@media(min-width:701px) and (max-width:1100px){.history-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.history-filters select {padding-left:12px;padding-right:28px;font-size:13px}
+@media(max-width:700px){
+  .page-heading {display:block}
+  .page-heading .actions {display:flex;flex-direction:row;flex-wrap:wrap;margin-top:20px;gap:10px;width:100%}
+  .page-heading .actions .btn {font-size:12px;min-height:46px;flex:1;padding:10px 12px}
+  .history-filters .field:has(select[name="sort"]) {min-width:100%}
+  .tabs {scrollbar-width:none}
+}
+
+.undo-panel small {display:block;font-size:11px;color:var(--muted);margin-top:5px}

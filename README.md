@@ -21,13 +21,19 @@ En PowerShell: `Copy-Item .env.example .env`. Abre http://127.0.0.1:3000. La dem
 - Inicio público y acceso Lichess con OAuth PKCE, estado de un solo uso y cookie vinculada al navegador. Sin contraseñas propias; no se almacena el token de Lichess.
 - Perfil editable: alias, avatar, tipo de usuario, biografía, club, escuela, localidad, año, Elo por modalidad, título declarado, enlaces y contacto.
 - Tarjeta digital, QR real, enlace persistente, compartir y descarga PNG. El PNG utiliza únicamente la proyección pública.
-- Torneos y logros: crear, editar, eliminar, fuentes y orden cronológico. Estadísticas de puntuación, actividad por años/modalidades y evolución de Elo declarado por modalidad.
+- Torneos y logros: crear, editar y eliminar con diez segundos para deshacer, también tras recargar. Búsqueda por nombre sin distinguir acentos, filtros por temporada/modalidad, orden y agrupación anual. Carga por bloques de 25 registros en el historial y los perfiles públicos.
+- Duplicación de torneos como borrador: conserva el contexto y propone la fecha actual; resultados, Elo, notas y fuente se introducen de nuevo. Recuerda la última modalidad por cuenta en el dispositivo.
+- Estadísticas filtrables por temporada y modalidad, con acceso a los torneos correspondientes. Gráficas de Elo limitadas a 120 puntos representativos cuando hay más datos, identificadas como vista resumida.
+- Vista como visitante, disponible también con el perfil privado, sin publicar ni cambiar la privacidad. Solo utiliza la proyección de campos y secciones que serían públicos; las notas personales de los registros quedan excluidas.
+- Aviso propio de Chedex antes de descartar formularios, aviso del navegador al abandonar la página y errores de validación de torneos junto al campo afectado.
 - Consulta pública sin cuenta, favoritos privados y apertura de perfiles mediante su enlace. Los QR pueden escanearse con la cámara del móvil.
 - Perfil privado y contacto oculto por defecto. Visibilidad por secciones, invalidación del enlace, exportación JSON, cierre de sesión y eliminación transaccional de datos.
 - Estados calculados por el servidor: Declarado y Con fuente. Ningún formulario permite otorgar Verificado.
 - Primeros pasos guiados y campos opcionales agrupados para mantener cortos los formularios móviles.
 - Landing pública con tarjeta de ejemplo interactiva, recorrido visual, explicación de privacidad y preguntas frecuentes. La portada `/` también es visible con sesión iniciada; el espacio personal utiliza rutas como `/app/tarjeta` y `/app/historial/torneos`, sin hashes.
 - Administración para la identidad de Lichess **AndresLi**, validada por el servidor. El alias editable no concede permisos; el panel muestra contadores y configuración sin revelar historiales privados.
+
+Los registros eliminados dejan de aparecer inmediatamente en el historial, las estadísticas y el perfil público. Su copia temporal permite restaurarlos durante diez segundos. Las copias caducadas se purgan al consultar la cuenta, al eliminar otro registro y al iniciar el servidor. El borrado de cuenta elimina también estas copias. La tabla `entry_trash` se crea automáticamente, sin modificar los registros existentes.
 
 ## Turso y producción
 

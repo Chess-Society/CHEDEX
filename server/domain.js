@@ -1,4 +1,7 @@
-export class InputError extends Error {}
+export class InputError extends Error {
+  constructor(message,field){super(message);this.field=field;}
+}
+const atField=(field,read)=>{try{return read();}catch(error){if(error instanceof InputError)error.field=field;throw error;}};
 export function text(value, max = 120, required = false) {
   if (typeof value !== 'string' || value.length > max || (required && !value.trim())) throw new InputError('Revisa los campos obligatorios y su longitud.');
   return value.trim();
@@ -42,16 +45,16 @@ export function profileInput(input, previous) {
 }
 export function entryInput(kind, v) {
   if (!['tournaments','achievements'].includes(kind)) throw new InputError('Tipo de registro no válido.');
-  const date = text(v.date, 10, true);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0,10) !== date) throw new InputError('Introduce una fecha válida.');
-  const data = { name: text(v.name, 140, true), date, source: url(v.source || ''), notes: text(v.notes || '', 800) };
+  const date = atField('date',()=>text(v.date, 10, true));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0,10) !== date) throw new InputError('Introduce una fecha válida.','date');
+  const data = { name: atField('name',()=>text(v.name, 140, true)), date, source: atField('source',()=>url(v.source || '')), notes: atField('notes',()=>text(v.notes || '', 800)) };
   if (kind === 'achievements') data.category = text(v.category || 'Reconocimiento', 60);
   else {
-    Object.assign(data, { city: text(v.city || '',80), organizer: text(v.organizer || '',100), mode: text(v.mode || 'Rápidas',30), timeControl: text(v.timeControl || '',50), rounds: integer(v.rounds, 100), points: number(v.points,100), position: integer(v.position,100000), participants: integer(v.participants,100000), elo: integer(v.elo,4000) });
-    if (!['Clásicas','Rápidas','Blitz','Otras'].includes(data.mode)) throw new InputError('Modalidad no válida.');
-    if (data.points !== null && data.rounds === null) throw new InputError('Indica las rondas para registrar puntos.');
-    if (data.points !== null && data.points > data.rounds) throw new InputError('Los puntos no pueden superar las rondas.');
-    if (data.position !== null && (data.position < 1 || (data.participants !== null && data.position > data.participants))) throw new InputError('Revisa la clasificación.');
+    Object.assign(data, { city: atField('city',()=>text(v.city || '',80)), organizer: atField('organizer',()=>text(v.organizer || '',100)), mode: text(v.mode || 'Rápidas',30), timeControl: atField('timeControl',()=>text(v.timeControl || '',50)), rounds: atField('rounds',()=>integer(v.rounds, 100)), points: atField('points',()=>number(v.points,100)), position: atField('position',()=>integer(v.position,100000)), participants: atField('participants',()=>integer(v.participants,100000)), elo: atField('elo',()=>integer(v.elo,4000)) });
+    if (!['Clásicas','Rápidas','Blitz','Otras'].includes(data.mode)) throw new InputError('Modalidad no válida.','mode');
+    if (data.points !== null && data.rounds === null) throw new InputError('Indica las rondas para registrar puntos.','rounds');
+    if (data.points !== null && data.points > data.rounds) throw new InputError('Los puntos no pueden superar las rondas.','points');
+    if (data.position !== null && (data.position < 1 || (data.participants !== null && data.position > data.participants))) throw new InputError('Revisa la clasificación.','position');
   }
   data.status = data.source ? 'Con fuente' : 'Declarado';
   return data;
@@ -68,7 +71,7 @@ export function statistics(entries) {
 export function publicView(user, entries) {
   const p = user.profile;
   if (!p.public || !p.adultConfirmed || user.demo) return null;
-  const visible = entries.filter(e=>p.visibility[e.kind]);
+  const visible = entries.filter(e=>p.visibility[e.kind]).map(e=>{const {notes,...data}=e.data;return {...e,data};});
   const profile = { name:p.name, avatar:p.avatar, theme:p.theme, role:p.role, visibility:p.visibility };
   if (p.visibility.information) for (const k of ['bio','country','city','club','school','started','title','fideStandard','fideRapid','fideBlitz','fideUrl','lichess','chesscom','social']) profile[k]=p[k];
   if (p.visibility.contact) profile.contact=p.contact;

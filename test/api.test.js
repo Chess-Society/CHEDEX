@@ -4,9 +4,9 @@ import { spawn } from 'node:child_process';
 import { mkdtemp,rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { defaults } from '../server/domain.js';
+import { defaults,entryInput } from '../server/domain.js';
 let child,folder,db;
 const port=24000+Math.floor(Math.random()*15000),origin=`http://localhost:${port}`,localOrigin=`http://127.0.0.1:${port}`;
 const token='integration-test-token',second='second-test-token',id='test-user',publicId='abcdefghijklmnop';
@@ -17,6 +17,49 @@ before(async()=>{
   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('El servidor no inició.')),10000);child.stdout.on('data',data=>{if(String(data).includes('disponible')){clearTimeout(timer);resolve();}});child.on('exit',code=>{clearTimeout(timer);reject(new Error(`Servidor detenido: ${code}`));});});
   db=new DatabaseSync(file);db.exec('PRAGMA foreign_keys=ON');
   for(const [uid,session] of [[id,token],['another-user',second],['andresli','admin-test-token']]){const p=defaults(uid);p.adultConfirmed=true;db.prepare('INSERT INTO users VALUES(?,?,?,?,?,?)').run(uid,uid,uid===id?publicId:uid==='andresli'?'adminabcdefghijk':'qrstuvwxyzabcdef',JSON.stringify(p),0,new Date().toISOString());db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(createHash('sha256').update(session).digest('hex'),uid,Date.now()+3600000);}
+});
+
+test('historial por bloques, estadísticas filtradas, vista privada y recuperación con permisos y caducidad',async()=>{
+  const historyToken='history-test-token',historyUser='history-user',profile=defaults('Historial');profile.adultConfirmed=true;
+  db.prepare('INSERT INTO users VALUES(?,?,?,?,?,?)').run(historyUser,historyUser,'historyabcdefghi',JSON.stringify(profile),0,new Date().toISOString());
+  db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(createHash('sha256').update(historyToken).digest('hex'),historyUser,Date.now()+3600000);
+  const call=(path,method='GET',data)=>req(path,method,data,historyToken);
+  for(let i=0;i<60;i++){
+    const data=entryInput('tournaments',{name:`Peñíscola ${String(i).padStart(2,'0')}`,date:`${i<30?'2025':'2026'}-05-01`,mode:i%2?'Blitz':'Rápidas',rounds:7,points:4,notes:'Nota de ejemplo'});
+    db.prepare('INSERT INTO entries VALUES(?,?,?,?)').run(randomUUID(),historyUser,'tournaments',JSON.stringify(data));
+  }
+  const first=await (await call('/api/history?kind=tournaments')).json();
+  assert.equal(first.items.length,25);assert.equal(first.total,60);assert.equal(first.next,25);
+  const next=await (await call('/api/history?kind=tournaments&offset=25')).json();
+  assert.equal(next.items.length,25);assert.equal(new Set([...first.items,...next.items].map(e=>e.id)).size,50);
+  const last=await (await call('/api/history?kind=tournaments&offset=50')).json();
+  assert.equal(last.items.length,10);assert.equal(last.next,null);
+  const filtered=await (await call('/api/history?year=2026&mode=Blitz&search=peniscola')).json();
+  assert.equal(filtered.total,15);
+  assert.equal((await call('/api/history?sort=invalid')).status,400);
+  const stats=await (await call('/api/statistics?year=2026&mode=Blitz')).json();
+  assert.equal(stats.tournaments,15);assert.equal(stats.rounds,105);assert.equal(stats.points,60);
+  const compact=await (await call('/api/me?compact=1')).json();assert.equal(compact.entries.length,3);assert.equal(compact.totalEntries,60);
+  await call('/api/profile','PUT',{contact:'privado@example.org',visibility:{contact:false}});
+  const preview=await (await call('/api/preview')).json();
+  assert.equal(preview.entries[0].data.notes,undefined);assert.equal(preview.preview,true);assert.equal(preview.isPublic,false);assert.equal(preview.profile.contact,undefined);assert.equal(preview.entries.length,25);assert.equal(preview.totals.tournaments,60);assert.equal(preview.stats.tournaments,60);
+  const previewNext=await (await call('/api/preview?kind=tournaments&offset=25')).json();assert.equal(previewNext.entries.length,25);assert.equal(new Set([...preview.entries,...previewNext.entries].map(e=>e.id)).size,50);
+  assert.equal((await call('/api/public/'+compact.publicId)).status,404);
+  const entry=first.items[0],path=`/api/entries/tournaments/${entry.id}`;
+  const bad=await call(path,'PUT',{...entry.data,rounds:2,points:3});assert.equal(bad.status,400);assert.equal((await bad.json()).field,'points');
+  const deleted=await (await call(path,'DELETE')).json();assert.ok(deleted.undoUntil>Date.now());
+  assert.equal((await (await call('/api/statistics')).json()).tournaments,59);
+  assert.equal((await (await call('/api/preview')).json()).entries.some(e=>e.id===entry.id),false);
+  const pending=await (await call('/api/me?compact=1')).json();assert.equal(pending.undo[0].id,entry.id);
+  assert.equal((await req(path+'/restore','POST',{},'admin-test-token')).status,409);
+  assert.equal((await call(path+'/restore','POST',{})).status,200);
+  assert.equal((await call(path+'/restore','POST',{})).status,409);
+  assert.equal((await (await call('/api/statistics')).json()).tournaments,60);
+  await call(path,'DELETE');db.prepare('UPDATE entry_trash SET expires=? WHERE id=?').run(Date.now()-1,entry.id);
+  assert.equal((await call(path+'/restore','POST',{})).status,409);
+  assert.equal((await (await call('/api/me?compact=1')).json()).undo.length,0);
+  await call('/api/account','DELETE',{confirm:'ELIMINAR'});
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM entry_trash WHERE user_id=?').get(historyUser).n,0);
 });
 after(async()=>{db?.close();if(child&&child.exitCode===null){child.kill();await new Promise(resolve=>child.once('exit',resolve));}if(folder)await rm(folder,{recursive:true,force:true});});
 test('seguridad, privacidad, CRUD, enlace, QR y borrado completo',async()=>{

@@ -9,6 +9,7 @@ import { parseAppPath } from '../public/navigation.js';
 import { lichessAuth, isAdministrator } from './auth.js';
 import { createAppleWallet } from './apple-wallet.js';
 import { sessionCookies, readJson as body } from './security.js';
+import { filterHistory, historyOptions } from '../public/history-tools.js';
 
 export async function createApplication(options={}) {
 const port = Number(process.env.PORT || 3000);
@@ -61,7 +62,14 @@ async function createDemo(res) {
   ]) await db('INSERT INTO entries VALUES(?,?,?,?)',[randomUUID(),id,v.kind,JSON.stringify(entryInput(v.kind,v))]);
   await makeSession(res,await findUser(id));
 }
-const assets = new Map([['/navigation.js',['navigation.js','text/javascript']],['/landing.js',['landing.js','text/javascript']],['/landing.css',['landing.css','text/css']],['/landing-qr.svg',['landing-qr.svg','image/svg+xml']],['/app.js',['app.js','text/javascript']],['/style.css',['style.css','text/css']],['/design.css',['design.css','text/css']],['/favicon.svg',['favicon.svg','image/svg+xml']]]);
+const assets = new Map([['/history-tools.js',['history-tools.js','text/javascript']],['/navigation.js',['navigation.js','text/javascript']],['/landing.js',['landing.js','text/javascript']],['/landing.css',['landing.css','text/css']],['/landing-qr.svg',['landing-qr.svg','image/svg+xml']],['/app.js',['app.js','text/javascript']],['/style.css',['style.css','text/css']],['/design.css',['design.css','text/css']],['/favicon.svg',['favicon.svg','image/svg+xml']]]);
+function publicResponse(data,query){
+  let filters;try{filters=historyOptions(query);}catch{throw new InputError('Filtros no válidos.');}
+  const totals=Object.fromEntries(['tournaments','achievements'].map(kind=>[kind,data.entries.filter(e=>e.kind===kind).length]));
+  const kinds=filters.kind?[filters.kind]:['tournaments','achievements'];
+  const entries=kinds.flatMap(kind=>data.entries.filter(e=>e.kind===kind).slice(filters.offset,filters.offset+25));
+  return {...data,entries,totals};
+}
 const server=createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
@@ -97,12 +105,32 @@ const server=createServer(async(req,res)=>{
     if(path.startsWith('/api/public/') && req.method==='GET') {
       const user=userRow((await db('SELECT * FROM users WHERE public_id=?',[path.slice(12)]))[0]);
       const data=user&&publicView(user,await entriesFor(user.id));
-      return data?json(res,200,data):json(res,404,{error:'Este perfil no está disponible. Puede ser privado o haberse eliminado.'});
+      return data?json(res,200,publicResponse(data,new URL(req.url,origin).searchParams)):json(res,404,{error:'Este perfil no está disponible. Puede ser privado o haberse eliminado.'});
     }
     if(path.startsWith('/api/')) {
       const user=await sessionUser(req);
       if(!user)return json(res,401,{error:'Inicia sesión para continuar.'});
-      if(path==='/api/me' && req.method==='GET'){const entries=await entriesFor(user.id);return json(res,200,{...user,isAdmin:isAdministrator(user),entries,stats:statistics(entries),publicUrl:`${origin}/p/${user.publicId}`});}
+      if(path==='/api/me' && req.method==='GET'){await db('DELETE FROM entry_trash WHERE expires<?',[Date.now()]);const entries=await entriesFor(user.id);return json(res,200,{...user,isAdmin:isAdministrator(user),entries:new URL(req.url,origin).searchParams.get('compact')==='1'?entries.slice(0,3):entries,stats:statistics(entries),totalEntries:entries.length,historyYears:[...new Set(entries.map(e=>e.data.date.slice(0,4)))].sort().reverse(),undo:(await db('SELECT id,kind,data,expires FROM entry_trash WHERE user_id=? AND expires>?',[user.id,Date.now()])).map(r=>({id:r.id,kind:r.kind,name:JSON.parse(r.data).name,until:r.expires})),publicUrl:`${origin}/p/${user.publicId}`});}
+      if(['/api/history','/api/statistics'].includes(path) && req.method==='GET') {
+        let filters;try{filters=historyOptions(new URL(req.url,origin).searchParams);}catch{throw new InputError('Filtros no válidos.');}
+        const entries=filterHistory(await entriesFor(user.id),filters);
+        return path==='/api/statistics'?json(res,200,statistics(entries)):json(res,200,{items:entries.slice(filters.offset,filters.offset+25),total:entries.length,next:filters.offset+25<entries.length?filters.offset+25:null});
+      }
+      if(path==='/api/preview' && req.method==='GET') {
+        const data=publicView({...user,demo:false,profile:{...user.profile,public:true,adultConfirmed:true}},await entriesFor(user.id));
+        return json(res,200,publicResponse({...data,preview:true,isPublic:!!publicView(user,[])},new URL(req.url,origin).searchParams));
+      }
+      const restore=path.match(/^\/api\/entries\/(tournaments|achievements)\/([a-f0-9-]+)\/restore$/);
+      if(restore && req.method==='POST') {
+        const [,kind,id]=restore,now=Date.now();
+        const saved=(await db('SELECT id FROM entry_trash WHERE id=? AND user_id=? AND kind=? AND expires>?',[id,user.id,kind,now]))[0];
+        if(!saved)return json(res,409,{error:'El plazo para deshacer ha terminado o el registro no está disponible.'});
+        await db.transaction([
+          ['INSERT INTO entries SELECT id,user_id,kind,data FROM entry_trash WHERE id=? AND user_id=? AND expires>? AND NOT EXISTS (SELECT 1 FROM entries WHERE id=?)',[id,user.id,now,id]],
+          ['DELETE FROM entry_trash WHERE id=? AND user_id=?',[id,user.id]]
+        ]);
+        return json(res,200,{ok:true});
+      }
       if(path==='/api/admin' && req.method==='GET') {
         if(!isAdministrator(user))return json(res,403,{error:'Esta sección está reservada a la administración.'});
         const users=await db('SELECT COUNT(*) AS total FROM users WHERE demo=0');
@@ -129,7 +157,15 @@ const server=createServer(async(req,res)=>{
         if(['PUT','DELETE'].includes(req.method) && (!id || !(await db('SELECT id FROM entries WHERE id=? AND user_id=? AND kind=?',[id,user.id,kind])).length))return json(res,404,{error:'Registro no encontrado.'});
         if(req.method==='POST' && !id){const count=(await db('SELECT COUNT(*) AS n FROM entries WHERE user_id=?',[user.id]))[0].n;if(count>=10000)throw new InputError('Has alcanzado el límite de registros.');const data=entryInput(kind,await body(req));await db('INSERT INTO entries VALUES(?,?,?,?)',[randomUUID(),user.id,kind,JSON.stringify(data)]);return json(res,201,{ok:true});}
         if(req.method==='PUT'){const data=entryInput(kind,await body(req));await db('UPDATE entries SET data=? WHERE id=? AND user_id=?',[JSON.stringify(data),id,user.id]);return json(res,200,{ok:true});}
-        if(req.method==='DELETE'){await db('DELETE FROM entries WHERE id=? AND user_id=?',[id,user.id]);return json(res,200,{ok:true});}
+        if(req.method==='DELETE'){
+          const undoUntil=Date.now()+10000;
+          await db.transaction([
+            ['DELETE FROM entry_trash WHERE expires<?',[Date.now()]],
+            ['INSERT OR IGNORE INTO entry_trash SELECT id,user_id,kind,data,? FROM entries WHERE id=? AND user_id=?',[undoUntil,id,user.id]],
+            ['DELETE FROM entries WHERE id=? AND user_id=?',[id,user.id]]
+          ]);
+          return json(res,200,{ok:true,undoUntil});
+        }
       }
       if(path==='/api/qr' && req.method==='GET') {
         if(!publicView(user,[]))return json(res,409,{error:'Activa tu perfil público para generar su QR.'});
@@ -153,6 +189,7 @@ const server=createServer(async(req,res)=>{
         await db.transaction([
           ['DELETE FROM sessions WHERE user_id=?',[user.id]],
           ['DELETE FROM entries WHERE user_id=?',[user.id]],
+          ['DELETE FROM entry_trash WHERE user_id=?',[user.id]],
           ['DELETE FROM favorites WHERE user_id=? OR target_id=?',[user.id,user.id]],
           ['DELETE FROM users WHERE id=?',[user.id]]
         ]);res.setHeader('Set-Cookie',cookie('chedex','',0));return json(res,200,{ok:true});
@@ -166,11 +203,12 @@ const server=createServer(async(req,res)=>{
     const [file,type]=asset||['index.html','text/html'];
     const content=options.readAsset?await options.readAsset(file):await readFile(fileURLToPath(new URL(`../public/${file}`,import.meta.url)));
     res.writeHead(200,{'Content-Type':`${type}; charset=utf-8`});res.end(req.method==='HEAD'?undefined:content);
-  } catch(e) {if(e instanceof InputError)return json(res,e.status||400,{error:e.message});console.error('Solicitud fallida:',e.name);if(!res.headersSent)json(res,500,{error:'No se pudo completar la operación. Inténtalo de nuevo.'});else res.end();}
+  } catch(e) {if(e instanceof InputError)return json(res,e.status||400,{error:e.message,...(e.field?{field:e.field}:{})});console.error('Solicitud fallida:',e.name);if(!res.headersSent)json(res,500,{error:'No se pudo completar la operación. Inténtalo de nuevo.'});else res.end();}
 });
 // Los estados de acceso caducados no se conservan indefinidamente.
 await db('DELETE FROM sessions WHERE expires<?',[Date.now()]);
 await db('DELETE FROM oauth WHERE expires<?',[Date.now()]);
+await db('DELETE FROM entry_trash WHERE expires<?',[Date.now()]);
 await db('DELETE FROM users WHERE demo=1 AND created_at<?',[new Date(Date.now()-86400000).toISOString()]);
 return server;
 }
