@@ -1,0 +1,298 @@
+/* Chedex: superficies sólidas, bordes definidos y controles con relieve. */
+:root {
+  --bg: #f1f0ec;
+  --surface: #faf9f6;
+  --ink: #252420;
+  --muted: #716f68;
+  --line: #dedbd3;
+  --violet: #575f4d;
+  --soft: #e8e9df;
+  --navy: #252420;
+  --edge: #252420;
+  --raised: #252420;
+  --button-ink: #faf9f6;
+  --well: #eae8e2;
+  --shadow: 0 6px 0 #252420;
+  background: var(--bg);
+  color: var(--ink);
+}
+body.dark {
+  --bg: #19191e;
+  --surface: #252429;
+  --ink: #f2f1ed;
+  --muted: #b2afb9;
+  --line: #3e3a46;
+  --violet: #dedcca;
+  --soft: #333239;
+  --navy: #eeede8;
+  --edge: #0b0b0e;
+  --raised: #efeee9;
+  --button-ink: #18181c;
+  --well: #1d1b21;
+  --shadow: 0 6px 0 #0b0b0e;
+  background: var(--bg);
+  color: var(--ink);
+}
+body {font-weight:450;line-height:1.5}
+button,input,select,textarea {font-family:inherit}
+h1,h2,h3 {font-weight:750;letter-spacing:-.045em}
+.brand {font-weight:800;gap:10px;letter-spacing:-1.2px}
+.brand img {width:40px;height:40px;border-radius:13px;box-shadow:0 3px 0 var(--edge)}
+.brand-dot {color:inherit}
+.panel {border:2px solid var(--edge);border-radius:24px;box-shadow:var(--shadow)}
+.btn {min-height:48px;padding:12px 19px;border:2px solid var(--edge);border-radius:16px;background:var(--surface);font-size:13px;font-weight:720;box-shadow:0 4px 0 var(--edge);transition:transform .12s,box-shadow .12s,background .12s}
+.btn:hover {background:var(--soft);transform:translateY(-1px);box-shadow:0 5px 0 var(--edge)}
+.btn:active {transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
+.btn.primary,.btn.primary:hover {background:var(--raised);color:var(--button-ink);border-color:var(--edge)}
+.btn.violet {background:var(--soft);color:var(--ink);border:2px solid var(--edge)}
+.btn.ghost {border:2px solid var(--edge);background:transparent;color:var(--ink)}
+.btn.danger {background:#f3dfdc;color:#8b3130;border-color:var(--edge)}
+body.dark .btn.danger {background:#412a2e;color:#ffb0a8}
+.btn:disabled {transform:none;box-shadow:0 2px 0 var(--edge)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible {outline:3px solid #91ad72;outline-offset:4px}
+.icon-btn {border-radius:12px}
+.icon-btn:hover {background:var(--soft)}
+.sidebar {background:var(--bg);border-right:2px solid var(--edge);padding-top:30px}
+.sidebar .brand {padding-left:6px;margin-bottom:45px}
+.nav-label,.powered,.footer,.nav-label+.nav {color:var(--muted)}
+.nav {gap:11px}
+.nav button {min-height:48px;border:2px solid transparent;border-radius:15px;padding:11px 13px;color:var(--muted);font-weight:600}
+.nav button:hover {background:var(--surface)}
+.nav button.active {background:var(--raised);color:var(--button-ink);border-color:var(--edge);box-shadow:0 4px 0 var(--edge);font-weight:750}
+.powered {border-color:var(--line);font-size:11px}
+.powered strong {color:var(--ink)}
+.topbar {background:var(--bg);border-bottom:1px solid var(--line)}
+.topbar-crumb strong {font-weight:650}
+.topbar-user {border-color:var(--line)}
+.avatar {background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:12px}
+.content {padding-top:40px}
+.page-heading {margin-bottom:30px}
+.page-heading h1 {font-size:34px;font-weight:780;margin-bottom:8px}
+.page-heading p {font-size:14px}
+.section-heading h2,.settings-panel h2 {font-weight:750;font-size:19px}
+.card-section,.share-panel,.recent,.settings-panel,.public-section,.stat-list {padding:27px}
+.dashboard-grid {gap:26px}
+.right-stack {gap:26px}
+.card-stage {perspective:none;padding-top:3px}
+.chess-card {background:#222228;border:2px solid #0b0b0e;box-shadow:0 7px 0 #0b0b0e;border-radius:22px;padding:27px;color:#f4f2ed;aspect-ratio:auto;min-height:290px}
+.chess-card::before {display:none}
+.chess-card.violet {background:#3c3348}
+.chess-card.forest {background:#2d4138}
+.chess-card .brand {font-size:20px;font-weight:800;color:#f4f2ed}
+.chess-card .brand img {width:29px;height:29px;border-radius:9px;box-shadow:0 2px 0 #0b0b0e}
+.card-top .eyebrow {color:#c1bdc8;font-size:8px;letter-spacing:.13em}
+.card-avatar {width:62px;height:62px;border:2px solid #0b0b0e;border-radius:18px;background:#39373f;box-shadow:0 3px 0 #0b0b0e;color:#f1eee7;font-weight:700}
+.card-identity h2 {font-weight:750;letter-spacing:-.04em}
+.card-identity p,.card-ratings span {color:#c4c0ca}
+.card-bottom {border-color:#4c4853}
+.card-id {color:#efede6}
+.card-bottom .eyebrow {color:#bdb8c5}
+.card-ratings strong {font-weight:700}
+.card-flip {background:#f1f0eb;border:2px solid #0b0b0e;border-radius:11px;box-shadow:0 3px 0 #0b0b0e;padding:7px}
+.card-flip svg {color:#232227}
+.card-caption {margin-top:20px;font-size:11px}
+.card-toolbar {gap:10px;padding:5px 0}
+.card-toolbar .btn {min-height:44px;font-size:12px}
+.wallets {margin-top:23px;padding-top:22px}
+.wallets p {font-size:12px}
+.wallets .btn {background:var(--well);font-size:11px;min-height:43px;padding:10px 13px}
+.share-panel h2 {font-size:19px;line-height:1.25}
+.share-panel p {font-size:13px}
+.share-panel .btn {font-size:13px}
+.link-box {min-height:47px;background:var(--well);border:2px solid var(--edge);border-radius:13px;font-size:11px;box-shadow:inset 0 2px 0 #00000016}
+.link-box .icon-btn {min-height:34px}
+.profile-status {font-size:12px}
+.tip-panel,body.dark .tip-panel {background:var(--surface);border-color:var(--edge)}
+.tip-panel h3,body.dark .tip-panel h3 {color:var(--ink);font-size:14px}
+.tip-panel p,body.dark .tip-panel p {color:var(--muted);font-size:12px}
+.tip-panel>.icon {color:var(--muted)}
+.pill {padding:5px 10px;border-radius:9px;background:var(--well);border:1px solid var(--line);font-size:10px;color:var(--muted)}
+.pill.violet {color:var(--ink);background:var(--soft)}
+.pill.green {color:#355c30;background:#e5eddc}
+body.dark .pill.green {color:#c1dda9;background:#2d392a}
+.text-button {color:var(--ink);font-size:12px;min-height:32px}
+.text-button:hover {text-decoration:underline;text-underline-offset:4px}
+.metric {padding:22px}
+.metric-top {font-size:12px;color:var(--muted)}
+.metric-top .icon {color:var(--muted)}
+.metric strong {font-size:32px;font-weight:750}
+.metric small {font-size:11px}
+.entry-icon {border:1px solid var(--edge);background:var(--well);color:var(--ink);border-radius:13px}
+.entry-main h3 {font-size:14px;font-weight:700;letter-spacing:-.02em}
+.entry-main p {font-size:12px}
+.entry-right {font-weight:750}
+.entry-right small {font-size:11px}
+.empty h3 {font-weight:750}
+.empty>.icon {color:var(--muted)}
+.tabs {border-bottom:0;padding:0 0 6px;gap:10px}
+.tabs button {background:var(--surface);border:2px solid var(--edge);border-radius:14px;padding:11px 17px;font-size:13px;font-weight:650;box-shadow:0 4px 0 var(--edge);min-height:46px}
+.tabs button.active {background:var(--raised);color:var(--button-ink);border-color:var(--edge);font-weight:750}
+.tabs button:active {transform:translateY(2px);box-shadow:0 2px 0 var(--edge)}
+.field {gap:9px;font-size:13px;font-weight:650}
+.field small {font-size:12px;font-weight:400;color:var(--muted)}
+.field input,.field select,.field textarea,.setting-row select {background:var(--well);border:2px solid var(--edge);border-radius:14px;padding:13px 15px;min-height:49px;font-size:14px;box-shadow:inset 0 3px 0 #00000018}
+.field input::placeholder,.field textarea::placeholder {color:var(--muted);opacity:.8}
+.field input[type=file] {padding:9px;font-size:12px}
+.field input::file-selector-button {background:var(--raised);color:var(--button-ink);border:1px solid var(--edge);border-radius:8px;padding:7px 10px;margin-right:10px;font-weight:650}
+.field select,.setting-row select {appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23938e9c' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 15px center;padding-right:42px}
+select option {background:var(--well);color:var(--ink)}
+.form-grid {gap:20px}
+.form-details {background:var(--well);border:2px solid var(--edge);border-radius:15px}
+.form-details summary {position:relative;list-style:none;padding:16px 43px 16px 16px;font-size:13px;font-weight:700;line-height:1.5;min-height:53px}
+.form-details summary::-webkit-details-marker {display:none}
+.form-details summary::after {content:'+';position:absolute;right:17px;top:13px;font-size:20px;font-weight:500;color:var(--muted)}
+.form-details[open] summary::after {content:'−'}
+.form-details[open] summary {border-color:var(--line)}
+.form-details>.form-grid {padding:20px;background:var(--surface)}
+.form-actions {padding-top:19px;gap:12px}
+.setting-row {padding:19px 0}
+.setting-row label {font-size:13px;font-weight:650}
+.setting-row small {font-size:12px;line-height:1.6}
+.setting-row input[type=checkbox] {appearance:none;position:relative;width:44px;height:27px;border:2px solid var(--edge);border-radius:9px;background:var(--well);cursor:pointer}
+.setting-row input[type=checkbox]::after {content:'';position:absolute;left:3px;top:3px;width:17px;height:17px;border-radius:5px;background:var(--muted);transition:transform .12s}
+.setting-row input[type=checkbox]:checked {background:#bdd79e}
+.setting-row input[type=checkbox]:checked::after {background:#293323;transform:translateX(16px)}
+.setting-row .check-label {font-size:12px;font-weight:500}
+.setting-row .check-label input {appearance:auto;width:17px;height:17px;min-width:17px;margin-top:4px;accent-color:#829e66}
+.setting-row .check-label input::after {display:none}
+.notice {background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:14px;font-size:13px;padding:15px 17px}
+.onboarding {border-color:var(--edge);padding:25px;gap:19px}
+.onboarding h2 {font-size:23px;font-weight:750}
+.onboarding p {font-size:13px}
+.onboarding .eyebrow {color:var(--muted)}
+.onboarding-actions {gap:12px}
+.onboarding-actions .btn {font-size:12px}
+dialog {border:2px solid var(--edge);border-radius:25px;box-shadow:0 8px 0 var(--edge),0 24px 80px #0005;padding:30px;width:min(660px,calc(100% - 32px))}
+dialog::backdrop {background:#09090dcc;backdrop-filter:blur(3px)}
+.dialog-heading {margin-bottom:28px}
+.dialog-heading h2 {font-size:27px;font-weight:780;line-height:1.15}
+.dialog-heading p {font-size:13px;margin-top:10px}
+.theme-option {border-radius:17px;font-size:12px;color:var(--muted);padding:9px;border:2px solid transparent}
+.theme-option span {width:135px;height:82px;border:2px solid #0b0b0e;border-radius:12px;box-shadow:0 4px 0 #0b0b0e;background:#222228}
+.theme-option.violet span {background:#3c3348}
+.theme-option.forest span {background:#2d4138}
+.theme-option.selected {border-color:#91ad72;background:var(--soft);color:var(--ink)}
+.themes {gap:12px;margin-bottom:20px}
+.demo-banner,body.dark .demo-banner {background:var(--soft);color:var(--ink);border-bottom:1px solid var(--line)}
+.landing {background:var(--bg)}
+body.dark .landing {background:var(--bg)}
+.landing-header {padding-top:30px;padding-bottom:30px}
+.landing-nav {color:var(--muted)}
+.hero {padding-top:70px;padding-bottom:80px;gap:55px}
+.hero .eyebrow {color:var(--muted);letter-spacing:.17em}
+.hero h1 {font-weight:800;letter-spacing:-.065em;font-size:clamp(44px,4.8vw,66px)}
+.hero h1 em {color:var(--ink)}
+.hero>div>p {color:var(--muted);font-size:15px}
+.hero-visual {background:none;padding:48px 0}
+.hero-visual .chess-card {transform:none;max-width:460px}
+.hero-note {transform:none;border-radius:16px;box-shadow:0 5px 0 var(--edge);margin-top:22px;font-size:12px;background:var(--surface)}
+.hero-note strong {font-size:13px}
+.hero-note>.icon {color:var(--ink)}
+.promise {border-color:var(--line);font-size:13px}
+.promise .icon {color:var(--ink)}
+.how>.eyebrow {color:var(--muted)}
+.how>h2 {font-weight:780;font-size:34px}
+.feature {padding:25px;border:2px solid var(--edge);background:var(--surface);border-radius:22px;box-shadow:var(--shadow)}
+.features {gap:22px}
+.feature>span {color:var(--muted);font-size:11px}
+.feature h3 {font-size:20px;line-height:1.2;font-weight:750}
+.feature p {font-size:13px}
+.landing-end {background:var(--surface);border:2px solid var(--edge);box-shadow:var(--shadow);border-radius:24px}
+.landing-end h2 {font-weight:780;font-size:27px}
+.landing-footer {border-color:var(--line);font-size:12px}
+.qr-panel img {border:2px solid var(--edge);border-radius:16px;background:white}
+.stat-line {font-size:13px;padding:16px 0;gap:18px}
+.stat-line strong {text-align:right}
+.chart {color:var(--ink)}
+#toast {background:var(--raised);color:var(--button-ink);border:2px solid var(--edge);border-radius:16px;box-shadow:0 5px 0 var(--edge);font-weight:650}
+@media(max-width:1150px) {
+  .chess-card {padding:23px}
+  .hero {gap:30px}
+  .feature {padding:21px}
+}
+@media(max-width:900px) {
+  .hero {padding-top:45px;gap:10px}
+  .hero h1 {font-size:56px}
+  .hero-visual {padding-top:38px}
+  .features {gap:16px}
+}
+@media(max-width:650px) {
+  .sidebar {background:var(--bg);border-right:0;border-top:2px solid var(--edge);height:79px}
+  .nav {gap:0}
+  .nav button {border:0;border-radius:13px;padding:10px 3px;min-height:65px;font-size:10px;margin:4px 3px 5px}
+  .nav button.active {background:var(--raised);color:var(--button-ink);border:1px solid var(--edge);box-shadow:0 3px 0 var(--edge)}
+  .workspace {padding-bottom:88px}
+  .topbar {height:68px;padding:0 18px}
+  .content {padding-top:28px}
+  .page-heading h1 {font-size:30px}
+  .page-heading p {font-size:13px;line-height:1.6}
+  .page-heading .actions>.btn {border-radius:14px;min-width:47px;min-height:47px}
+  .dashboard-grid,.right-stack {gap:23px}
+  .card-section,.share-panel,.recent,.settings-panel,.public-section,.stat-list {padding:21px 17px}
+  .section-heading h2 {font-size:18px}
+  .chess-card {padding:20px 18px;min-height:225px;border-radius:18px}
+  .card-top .brand {font-size:17px;gap:7px}
+  .card-top .brand img {width:24px;height:24px;border-radius:7px}
+  .card-top .eyebrow {font-size:6px;letter-spacing:.12em}
+  .card-avatar {width:47px;height:47px;border-radius:14px;font-size:19px}
+  .card-identity {gap:11px;padding:15px 0}
+  .card-identity h2 {font-size:22px;line-height:1.15}
+  .card-identity p {font-size:10px}
+  .card-bottom {gap:8px;padding-top:13px}
+  .card-ratings {gap:10px}
+  .card-ratings strong {font-size:14px}
+  .card-ratings span {font-size:8px}
+  .card-bottom .eyebrow {font-size:6px}
+  .card-id {font-size:8px}
+  .card-flip {padding:6px;border-radius:9px}
+  .card-flip .icon {width:18px;height:18px}
+  .card-toolbar {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .card-toolbar .btn {font-size:10px;padding:10px 5px;gap:5px;min-height:45px;border-radius:13px}
+  .card-toolbar .icon {width:14px;height:14px}
+  .wallets .btn {font-size:12px;min-height:46px;border-radius:14px}
+  .wallets p {font-size:12px}
+  .metric {padding:20px 16px;border-radius:20px}
+  .metric-top {font-size:11px}
+  .metric strong {font-size:29px}
+  .metric small {font-size:11px;line-height:1.5}
+  .metrics {gap:14px;margin:24px 0}
+  .entry-main h3 {font-size:13px}
+  .entry-main p,.entry-right small {font-size:11px}
+  .history-panel {padding:5px 16px}
+  .tabs {gap:8px}
+  .tabs button {padding:10px 14px;font-size:12px}
+  .field input,.field select,.field textarea {font-size:16px}
+  .form-details summary {font-size:13px;padding:16px 35px 16px 14px}
+  .form-details>.form-grid {padding:16px}
+  .form-actions {bottom:-23px;flex-wrap:wrap}
+  .form-actions .btn {flex:1}
+  dialog {padding:25px 20px;border-radius:23px}
+  .dialog-heading h2 {font-size:25px}
+  .dialog-heading p {font-size:12px;line-height:1.6}
+  .theme-option span {width:110px;height:69px}
+  .onboarding {padding:22px 18px}
+  .onboarding h2 {font-size:23px}
+  .onboarding p {font-size:13px}
+  .landing-header {padding:22px 19px}
+  .landing-header .brand {font-size:22px}
+  .landing-header .brand img {width:34px;height:34px;border-radius:10px}
+  .landing-header .btn {font-size:11px;padding:10px 12px;min-height:43px;border-radius:13px}
+  .hero {padding:37px 24px 47px}
+  .hero h1 {font-size:45px}
+  .hero .eyebrow {font-size:9px}
+  .hero>div>p {font-size:14px}
+  .hero .btn {font-size:12px;min-height:47px}
+  .hero-visual {padding:38px 0 4px}
+  .hero-visual .chess-card {transform:none}
+  .hero-note {padding:13px;text-align:left;font-size:10px}
+  .hero-note strong {font-size:12px}
+  .promise {font-size:12px;gap:19px}
+  .how {padding:43px 21px}
+  .how>h2 {font-size:29px;margin-bottom:26px}
+  .features {gap:20px}
+  .feature {padding:24px}
+  .feature h3 {font-size:21px}
+  .landing-end {padding:27px 22px;margin:0 20px 37px}
+  .landing-end h2 {font-size:25px}
+  .landing-footer {font-size:10px;line-height:1.6}
+}

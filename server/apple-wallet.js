@@ -15,7 +15,7 @@ export function applePassProperties(user,origin,env=process.env) {
   const data=publicView(user,[]);
   if(!data)throw new Error('WALLET_PRIVATE');
   const p=data.profile;
-  const colors={midnight:'rgb(24,37,61)',violet:'rgb(68,48,96)',forest:'rgb(32,78,68)'};
+  const colors={midnight:'rgb(34,34,40)',violet:'rgb(60,51,72)',forest:'rgb(45,65,56)'};
   const url=`${origin}/p/${user.publicId}`;
   return {
     formatVersion:1,passTypeIdentifier:env.APPLE_PASS_TYPE_ID,teamIdentifier:env.APPLE_TEAM_ID,
@@ -32,12 +32,14 @@ export function applePassProperties(user,origin,env=process.env) {
 }
 function icon(size) {
   const image=new PNG({width:size,height:size});
-  const polygon=[[39,14],[21,20],[16,37],[31,37],[24,47],[47,47],[38,29],[43,21]];
+  const polygon=[[27,36],[37,36],[37,39],[41,43],[44,47],[46,51],[18,51],[20,47],[23,43],[27,39]];
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const px=(x+.5)/size*64,py=(y+.5)/size*64;let inside=false;
     for(let i=0,j=polygon.length-1;i<polygon.length;j=i++) {const [a,b]=polygon[i],[c,d]=polygon[j];if((b>py)!==(d>py) && px<(c-a)*(py-b)/(d-b)+a)inside=!inside;}
-    const accent=px>=22&&px<=47&&py>=49&&py<=53;
-    const color=inside?[255,255,255]:accent?[175,164,250]:[24,37,61],idx=(y*size+x)*4;
+    const head=(px-32)**2+(py-19)**2<=49;
+    const body=(px-32)**2+(py-31)**2<=81;
+    const base=px>=16&&px<=48&&py>=52&&py<=56;
+    const color=inside||head||body||base?[37,36,41]:[239,238,233],idx=(y*size+x)*4;
     image.data.set([...color,255],idx);
   }
   return PNG.sync.write(image);
