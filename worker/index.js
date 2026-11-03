@@ -35,6 +35,7 @@ async function handleFetch(request, env) {
   }
   if (pathname === '/readyz') {
     await remoteDatabase(env)('SELECT revision FROM chedex_v2_catalog WHERE id=1');
+    console.log(JSON.stringify({ event: 'chedex_readiness', status: 'ok' }));
     return Response.json({ status: 'ready' }, { headers: { 'Cache-Control': 'no-store' } });
   }
   if (!['/legal.css', '/cookie-ui.js', '/legal.js', '/fonts/dm-sans-latin.woff2', '/fonts/dm-sans-latin-ext.woff2', '/fonts/OFL.txt', '/admin-dashboard.css', '/account.css', '/check.svg', '/escacsify-logo.png', '/icons.js', '/workspace.css', '/workspace-ui.js', '/project-data.js', '/admin-workspace.js', '/account.js', '/reviews.js', '/portal-nav.js', '/chessdare-logo.png', '/rexher-cup-logo.png', '/projects.css', '/style.css', '/app.js', '/routes.js', '/services-data.js', '/service-cards.js', '/selects.js', '/chess-scene.js', '/chess-scene.css', '/admin.js', '/admin.css', '/favicon.svg'].includes(pathname)) {
@@ -59,6 +60,7 @@ export default {
   async scheduled(_controller, env) {
     try {
       await cleanupExpired(await initializeStore(remoteDatabase(env)));
+      console.log(JSON.stringify({ event: 'chedex_maintenance', status: 'ok' }));
     } catch (error) {
       reportIncident(error, 'cleanup');
       throw new Error('MAINTENANCE_FAILED');

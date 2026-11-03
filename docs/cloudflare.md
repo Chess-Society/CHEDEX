@@ -30,6 +30,8 @@ El área privada `/cuenta` y el panel `/admin` sirven documentos sin caché y co
 
 ## Controles preparados tras la auditoría
 
-La configuración incorpora limpieza de registros caducados cada hora mediante `scheduled` y registros propios sin logs automáticos de invocación. Los errores se correlacionan mediante identificadores sin cuerpos, URLs, cookies ni credenciales. Consultar [mantenimiento de datos](mantenimiento-datos.md) para las limitaciones y comprobaciones previas a publicación. Estos cambios no se han desplegado durante la corrección local.
+La configuración incorpora limpieza de registros caducados cada hora mediante `scheduled` y registros propios sin logs automáticos de invocación. Los errores se correlacionan mediante identificadores sin cuerpos, URLs, cookies ni credenciales. Consultar [mantenimiento de datos](mantenimiento-datos.md) para las limitaciones y comprobaciones previas a publicación. Estos cambios se han desplegado tras la autorización posterior.
 
 Añadir a la comprobación posterior a publicación `/readyz`, las cabeceras efectivas, la limpieza programada y la recepción de un registro de prueba sin datos reales. La comprobación de preparación solo consulta el catálogo existente; no crea tablas mediante ese endpoint.
+
+Publicación comprobada: versión `71c833ff-fc94-4533-8f22-0e6e5d23041c`. El cron está registrado y el identificador técnico de la cuenta no habilita acceso público por workers.dev. OAuth real con AndresLi, panel, cuenta, disponibilidad y cabeceras se verificaron en el dominio. Consultar el bloque 05 de la auditoría para evidencias y límites.

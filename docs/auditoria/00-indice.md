@@ -4,7 +4,7 @@ Fecha: 3 de noviembre de 2026. Objeto: estado actual del directorio de trabajo, 
 
 ## Conclusión
 
-La auditoría inicial identificó **1 hallazgo de prioridad alta, 7 de prioridad media y 3 de prioridad baja**. Tras la autorización de corrección se han implementado cambios para los once: siete quedan verificados localmente y cuatro conservan comprobaciones externas pendientes. No se ha publicado ningún cambio. Esto no equivale a una certificación de seguridad.
+La auditoría inicial identificó **1 hallazgo de prioridad alta, 7 de prioridad media y 3 de prioridad baja**. Se han implementado y publicado las correcciones. Docker está verificado en GitHub Actions, existe una copia cifrada recuperable de producción y se han comprobado dominio, cabeceras, acceso real y registros. La limpieza horaria está activada; no se ha ejecutado una limpieza manual adicional. Esto no equivale a una certificación de seguridad.
 
 La caída del servidor Node está corregida: la prueba envía una petición malformada, obtiene 400 y comprueba que después sigue respondiendo. La batería completa tiene 49 pruebas correctas.
 
@@ -25,28 +25,30 @@ Los bloques 01–03 conservan el diagnóstico inicial y sus referencias de líne
 | ID | Prioridad inicial | Corrección | Estado actual |
 | --- | --- | --- | --- |
 | AUD-01 | Alta | Validación del destino HTTP y manejo global de errores | Corregido; prueba real de petición y supervivencia |
-| AUD-02 | Media | Directorio Docker con propietario/permisos y comprobación `/readyz` | Implementado; falta ejecutar Docker real |
+| AUD-02 | Media | Directorio Docker con propietario/permisos y comprobación `/readyz` | Verificado en GitHub: escritura, usuario sin privilegios, reinicio y volumen |
 | AUD-03 | Media | Historial asociado a tarea; retirada de eventos y protección de eventos antiguos | Corregido; dos pruebas de privacidad |
 | AUD-04 | Media | Páginas de 100 en API y recorrido completo en el cliente | Corregido; proyectos, personas y reseñas comprobados |
 | AUD-05 | Media | Alta condicional en una sola sentencia SQL | Corregido; solicitudes simultáneas respetan el máximo |
 | AUD-06 | Media | Revisión del perfil y rechazo 409 de copia antigua | Corregido; edición cruzada comprobada |
-| AUD-07 | Media | Limpieza horaria, herramienta local y procedimiento de datos | Local verificado; faltan copias, conservación y operación remotas |
-| AUD-08 | Media | Incidentes sin datos sensibles, readiness y configuración de logs | Local verificado; faltan recepción y alertas en proveedor |
-| AUD-09 | Baja | Cabeceras compartidas en Worker y Node | Pruebas correctas; falta verificar respuestas publicadas |
+| AUD-07 | Media | Limpieza horaria, herramienta local y procedimiento de datos | Copia remota cifrada restaurada en memoria; cron registrado; operación manual no ejecutada |
+| AUD-08 | Media | Incidentes sin datos sensibles, readiness y configuración de logs | Recepción de eventos de producción comprobada; monitor de disponibilidad en GitHub |
+| AUD-09 | Baja | Cabeceras compartidas en Worker y Node | Verificado en las respuestas publicadas de doce rutas |
 | AUD-10 | Baja | Carga e indisponibilidad del catálogo sin oferta de fábrica | Corregido; comprobado el fallo de API |
-| AUD-11 | Baja | Comprobación de todos los módulos y documentación actualizada | Corregido; 34 módulos comprobados |
+| AUD-11 | Baja | Comprobación de todos los módulos y documentación actualizada | Corregido; 37 módulos comprobados |
 
-## Pendiente para el cierre externo
+## Publicación y operación
 
-1. Construir y ejecutar Docker con volumen persistente; comprobar escritura y reinicio.
-2. Revisar el [procedimiento de mantenimiento](../mantenimiento-datos.md), conservación y copias reales del proveedor antes de operar con datos personales.
-3. Publicar únicamente cuando se autorice: la limpieza programada, logs y cabeceras preparadas no están activas todavía en producción.
-4. Después de publicar, verificar OAuth, `/readyz`, registros, cabeceras y limpieza; definir alertas y comprobar restauración remota.
+- Sitio publicado: https://chedex.app. Versión del Worker: `71c833ff-fc94-4533-8f22-0e6e5d23041c`.
+- Referencia anterior para reversión: `8d84f430-1d76-4f62-8b15-06ef0753ed44`.
+- [CI con Docker verificado](https://github.com/Chess-Society/CHEDEX/actions/runs/41634098136).
+- Cuenta administrativa real AndresLi: autorización Lichess completada; panel, catálogo y área personal cargan sin modificar contenido.
+- Limpieza configurada a los 17 minutos de cada hora UTC. La configuración se comprobó en la API del proveedor. La primera ejecución programada posterior a la publicación queda prevista para el siguiente minuto 17; no se ha observado todavía y deberá comprobarse en los registros. no se adelanta mediante una supresión manual.
+- La política de conservación del negocio y el alcance contractual de proveedores requieren decisiones del titular; no se inventan plazos ni se certifica cumplimiento legal.
 
 ## Alcance y límites
 
 Se revisaron API, almacenamiento, Worker, servidor Node, módulos de navegador, rutas, textos legales, configuración de despliegue, contenedor, CI y pruebas existentes. CSS, SVG y HTML se revisaron como recursos y superficie de exposición; no se realizó una auditoría visual exhaustiva ni de accesibilidad con tecnologías de asistencia.
 
-La primera entrega añadió únicamente la auditoría. La segunda, autorizada por el usuario, modifica código, pruebas, configuración local y documentación. No se accedió a bases de producción, paneles de proveedores ni valores de `.env`/`.dev.vars`, ni se publicaron cambios. El empaquetado regeneró `.worker-build`, ya excluido de Git. Los procedimientos de datos se probaron solo sobre archivos temporales ficticios.
+La primera entrega añadió únicamente la auditoría. La segunda, autorizada por el usuario, modifica código, pruebas, configuración local y documentación. Durante las correcciones iniciales no se accedió a producción. En la publicación posterior, expresamente autorizada, se leyeron las credenciales existentes en memoria sin mostrarlas, se obtuvo una copia remota cifrada autorizada y se publicó el Worker. No se modificaron perfiles, proyectos, mensajes ni reseñas reales. El empaquetado regeneró `.worker-build`, ya excluido de Git. La supresión se probó únicamente con archivos ficticios; la copia real se restauró en memoria y superó integridad. La sesión real de acceso creó sus registros técnicos normales de OAuth/sesión.
 
 No se inspeccionó todo el historial Git, configuración real de TLS/WAF, permisos de cuentas externas, contratos de tratamiento ni copias externas. Los cambios previos del usuario se conservaron.

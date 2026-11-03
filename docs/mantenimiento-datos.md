@@ -9,7 +9,7 @@ Todas las rutas de salida deben apuntar a directorios existentes y protegidos. L
 ## Limpieza automática
 
 - Node: limpieza cada hora, con proceso activo; no requiere que nadie vuelva a iniciar sesión.
-- Worker: manejador `scheduled`, configurado al minuto 17 de cada hora UTC. Solo se activará al publicar esta configuración.
+- Worker: manejador `scheduled`, configurado al minuto 17 de cada hora UTC. Activado en la publicación verificada.
 - Se conservan los registros cuya fecha sigue vigente; se eliminan únicamente estados OAuth, sesiones y contadores caducados. No elimina perfiles ni proyectos por antigüedad.
 
 Limpieza manual local, si es necesaria:
@@ -71,4 +71,20 @@ El contenedor comprueba `/readyz`, que incluye acceso al almacenamiento. `/healt
 
 ## Diagnóstico sin datos personales
 
-Los fallos inesperados generan un identificador de incidente, componente y categoría controlada. No se registran cuerpos, URLs, cookies, mensajes de error sin filtrar ni credenciales. Wrangler habilita registros propios y deshabilita los registros automáticos de invocación. La configuración está preparada, no publicada. Configurar y verificar acceso, retención y alertas operativas en el proveedor antes de dar por cubierto un monitor de producción.
+Los fallos inesperados generan un identificador de incidente, componente y categoría controlada. No se registran cuerpos, URLs, cookies, mensajes de error sin filtrar ni credenciales. Wrangler habilita registros propios y deshabilita los registros automáticos de invocación. La configuración está publicada y se ha comprobado la recepción de eventos de ejecución. Configurar y verificar acceso, retención y alertas operativas en el proveedor antes de dar por cubierto un monitor de producción.
+
+## Copia remota y publicación verificadas
+
+El 3 de noviembre de 2026 se autorizó expresamente una copia completa de solo lectura de Turso. `scripts/backup-remote.mjs` usa el endpoint oficial `/dump`, comprueba su restauración en SQLite en memoria y guarda únicamente un sobre AES-256-GCM y una clave en un directorio propio de `backups/`, con ACL privada en Windows. Ambos archivos son necesarios para recuperar la copia; mantenerlos protegidos y trasladar la clave a custodia separada cuando se establezca el procedimiento de recuperación. No se han enviado a GitHub ni Cloudflare.
+
+Para nuevas copias, obtener autorización y ejecutar con las credenciales existentes sin imprimirlas:
+
+```sh
+node --env-file=.dev.vars scripts/backup-remote.mjs
+```
+
+Para recuperar ese formato, leer `restore.key`, decodificar `iv`, `tag` y `data` del sobre, descifrar con AES-256-GCM y restaurar el SQL únicamente en un destino aislado autorizado. No sustituir una base activa. La ejecución inicial verificó tanto el SQL restaurado como la coincidencia exacta tras descifrar los archivos guardados.
+
+Cloudflare ya tiene activos el cron horario y la observabilidad. El identificador técnico `chedex-chesssociety.workers.dev` existe como requisito del proveedor, pero el Worker conserva `workers_dev=false` y previews desactivadas. La web pública sigue exclusivamente en su dominio configurado.
+
+El monitor horario de GitHub solo hace peticiones públicas de lectura y no descarga datos personales. Criterios de incidencia: fallo de portada o `/readyz`, pérdida de HSTS/nosniff o administración accesible sin sesión; reintenta dos veces antes de marcar error. Revisar el aviso de GitHub Actions y el identificador de incidente si existe; no incluir cookies ni cuerpos privados al diagnosticar. Los avisos dependen de las preferencias de notificación de GitHub existentes, que no se han cambiado.
