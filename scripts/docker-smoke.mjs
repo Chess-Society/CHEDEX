@@ -18,7 +18,7 @@ const ready = async origin => {
     try { if ((await fetch(`${origin}/readyz`, { signal: AbortSignal.timeout(2000) })).ok) return; } catch {}
     await setTimeout(500);
   }
-  throw new Error('Container readiness failed');
+  throw new Error(`Container readiness failed: ${docker('logs', name)}`);
 };
 
 try {
@@ -36,7 +36,9 @@ try {
     db.prepare('UPDATE chedex_v2_catalog SET content=?,revision=revision+1 WHERE id=1').run(JSON.stringify(services));
     db.close();
   `);
-  docker('restart', name); await ready(origin);
+  docker('restart', name);
+  origin = `http://${docker('port', name, '3000/tcp')}`;
+  await ready(origin);
   assert.ok((await (await fetch(`${origin}/api/services`)).json()).services.some(service => service.title === marker));
   docker('rm', '-f', name);
   origin = start(); await ready(origin);
