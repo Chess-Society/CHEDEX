@@ -1,269 +1,117 @@
-import { tournamentDraft } from './history-tools.js';
-import { appPath, parseAppPath } from './navigation.js';
-import { renderLanding, mountLanding, handleLandingAction } from './landing.js';
-const $ = s => document.querySelector(s);
-const root = $('#root'), dialog = $('#dialog');
-const escape = v => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const paths={card:'M3 5h18v14H3z M3 9h18 M7 14h4 M7 16h2',history:'M4 4v5h5 M4 9a8 8 0 1 1-1 7 M12 8v5l3 2',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M16 3a4 4 0 0 1 0 8 M22 21v-2a4 4 0 0 0-3-3.87 M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',settings:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2l2 3 3-1 3 3-1 3 3 2-3 2 1 3-3 3-3-1-2 3-2-3-3 1-3-3 1-3-3-2 3-2-1-3 3-3 3 1z',arrow:'M5 12h14 m-5-5 5 5-5 5',external:'M14 3h7v7 M10 14 21 3 M10 3H3v18h18v-7',plus:'M12 5v14 M5 12h14',edit:'m15 5 4 4 M4 20l5-1L21 7l-4-4L5 15z',copy:'M9 8h12v13H9z M15 8V3H3v13h6',download:'M12 3v12 m-5-5 5 5 5-5 M4 16v5h16v-5',share:'M12 16V3 m-4 4 4-4 4 4 M5 10H3v11h18V10h-2',qr:'M3 3h6v6H3z M15 3h6v6h-6z M3 15h6v6H3z M15 15h2v2h-2z M21 14v3 M14 21h3 M20 20h1v1h-1z',lock:'M5 10h14v11H5z M8 10V6a4 4 0 0 1 8 0v4 M12 14v3',globe:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0 M3 12h18 M12 3c5 5 5 13 0 18-5-5-5-13 0-18',trophy:'M8 3h8v7a4 4 0 0 1-8 0z M8 5H4v3a4 4 0 0 0 4 4 M16 5h4v3a4 4 0 0 1-4 4 M12 14v7 M8 21h8',medal:'M8 3H4l5 8 M16 3h4l-5 8 M17 16a5 5 0 1 1-10 0 5 5 0 0 1 10 0 M12 14v4 M10 16h4',chart:'M4 3v18h17 M8 16v-4 M13 16V8 M18 16V5',chess:'M15 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0 M9 9h6l-1 5 4 5H6l4-5z M5 22h14',check:'m5 12 4 4L19 6',shield:'M12 3 3 6v6c0 5 9 9 9 9s9-4 9-9V6z m-5 9 3 3 5-6',info:'M12 11v6 M12 7h.01 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',close:'m6 6 12 12 M6 18 18 6',sun:'M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l1 1 M18 18l1 1 M5 19l1-1 M18 6l1-1 M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0',moon:'M21 13a9 9 0 0 1-10-10 9 9 0 1 0 10 10',logout:'M9 3H3v18h6 M9 12h12 m-4-4 4 4-4 4',trash:'M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7',link:'m10 13 4-4 M8 16l-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0 M16 8l2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0',heart:'M20 4a5 5 0 0 0-8 2 5 5 0 0 0-8-2C-2 9 5 16 12 21c7-5 14-12 8-17',wallet:'M3 5h17v15H3z M3 5V3h14 M15 10h6v6h-6z M17 13h.01',help:'M9 8a3 3 0 1 1 5 2c-2 1-2 2-2 3 M12 17h.01 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0'};
-const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[name]||paths.info}"/></svg>`;
-const brand = () => '<a class="brand" href="/" aria-label="Chedex, inicio"><img src="/favicon.svg" alt="">chedex<span class="brand-dot">.</span></a>';
-const btn=(label,action,ico='',cls='',extra='')=>`<button type="button" class="btn ${cls}" data-action="${action}" aria-label="${escape(label)}" ${extra}>${ico?icon(ico):''}${label}</button>`;
-const initials=p=>p.name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
-const avatar=(p,cls='avatar')=>p.avatar?`<img class="${cls}" src="${escape(p.avatar)}" alt="Avatar de ${escape(p.name)}">`:`<span class="${cls}" aria-hidden="true">${escape(initials(p))}</span>`;
-const roles={player:'Jugador',coach:'Entrenador',club:'Club o escuela',organizer:'Organizador'};
-let me=null, config={}, page='card', historyTab='tournaments', publicData=null;
-let historyRows=[],historyRequest=0,historyNext=null;
-const historyFilters={search:'',year:'',mode:'',sort:'newest',scored:false},statsFilters={year:'',mode:''};
-let lastMode='Rápidas',draftBaseline='',undoTimer,statsRequest=0;
-const undoItems=new Map(),publicCounts={tournaments:25,achievements:25};
-let theme=localStorage.getItem('chedex-appearance')||'dark';
-document.body.classList.toggle('dark',theme==='dark');
-let toastTimer;
-function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),4000);}
-async function api(path,method='GET',data){const res=await fetch(path,{method,headers:{...(method!=='GET'?{'Content-Type':'application/json','X-Chedex-Request':'1'}:{})},...(data!==undefined?{body:JSON.stringify(data)}:{})});const v=await res.json();if(!res.ok){const error=new Error(v.error||'No se pudo completar la operación.');error.field=v.field;throw error;}return v;}
-async function refresh(){me=await api('/api/me?compact=1');render();restoreUndoItems();}
-function openDialog(title,html,subtitle=''){draftBaseline='';dialog.innerHTML=`<div class="dialog-heading spread"><div><h2 id="dialog-title">${title}</h2>${subtitle?`<p>${subtitle}</p>`:''}</div><button type="button" class="icon-btn" data-action="close" aria-label="Cerrar">${icon('close')}</button></div>${html}`;dialog.showModal();draftBaseline=formSnapshot(dialog.querySelector('form'));}
-const friendlyDate = date => new Date(`${date}T12:00:00`).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});
-function card(profile,id,interactive=true){
-  const subtitle=[profile.club,profile.title?`${profile.title} · declarado`:''].filter(Boolean).join(' · ')||roles[profile.role]||'Tu historia en el ajedrez';
-  const ratings=[['fideStandard','Clásico'],['fideRapid','Rápido'],['fideBlitz','Blitz']].filter(([k])=>profile[k]);
-  return `<div class="chess-card ${escape(profile.theme)}"><div class="card-top">${brand()}<span class="eyebrow">Pasaporte ajedrecístico</span></div><div class="card-identity">${avatar(profile,'card-avatar')}<div><h2>${escape(profile.name)}</h2><p>${escape(subtitle)}</p></div></div><div class="card-bottom"><div><div class="eyebrow">Identificador Chedex</div><div class="card-id">CX · ${escape(id.slice(0,8).toUpperCase())}</div></div><div class="card-ratings">${ratings.map(([k,label])=>`<div><strong>${escape(profile[k])}</strong><span>${label}</span></div>`).join('')}</div>${interactive?`<button class="card-flip" data-action="qr" aria-label="Ver código QR">${icon('qr')}</button>`:''}</div></div>`;
+import { sectionRoutes } from './routes.js';
+import { loadServices } from './service-cards.js';
+import { enhanceSelects, syncSelects } from './selects.js';
+import { initChessScene } from './chess-scene.js';
+
+initChessScene(document.querySelector('.chess-scene'));
+document.querySelector('[data-project-skip]')?.addEventListener('click', event => {
+  event.preventDefault();
+  document.getElementById('contenido').focus();
+});
+
+const servicesContainer = document.querySelector('#services-catalog');
+const servicesReady = servicesContainer ? loadServices(servicesContainer) : Promise.resolve();
+
+const contactDialog = document.querySelector('#contact-dialog');
+const form = document.querySelector('#contact-form');
+const menu = document.querySelector('#main-nav');
+const menuButton = document.querySelector('.menu-button');
+enhanceSelects(form);
+
+document.addEventListener('click', event => {
+    const button = event.target.closest('[data-contact]');
+    if (!button) return;
+    closeMenu();
+    form.elements.profile.value = button.dataset.contact || 'Jugador/a';
+    form.elements.need.value = button.dataset.need || (button.dataset.contact === 'Empresa u organización' ? 'Colaboración de marca' : 'Orientación inicial');
+    syncSelects(form);
+    document.querySelector('#form-status').textContent = '';
+    contactDialog.showModal();
+});
+document.querySelectorAll('[data-dialog]').forEach(button => {
+  button.addEventListener('click', () => document.getElementById(button.dataset.dialog).showModal());
+});
+document.querySelectorAll('dialog').forEach(dialog => {
+  dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', event => {
+    if (event.target !== dialog) return;
+    const bounds = dialog.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+  });
+});
+menuButton.addEventListener('click', () => {
+  const open = menuButton.getAttribute('aria-expanded') !== 'true';
+  menuButton.setAttribute('aria-expanded', String(open));
+  menuButton.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+  menu.classList.toggle('open', open);
+});
+function closeMenu() {
+  menu.classList.remove('open');
+  menuButton.setAttribute('aria-expanded', 'false');
+  menuButton.setAttribute('aria-label', 'Abrir menú');
 }
-function landing(){root.innerHTML=renderLanding({brand,icon,card,btn,loggedIn:!!me,demoEnabled:config.demoEnabled});mountLanding();if(new URLSearchParams(location.search).has('auth'))toast('No se pudo completar el acceso con Lichess. Inténtalo de nuevo.');}
-function render(){if(!me)return landing();history.replaceState({},'',appPath(page,historyTab));const labels={card:'Mi tarjeta',history:'Mi historial',profiles:'Perfiles',account:'Mi cuenta'};root.innerHTML=`<aside class="sidebar">${brand()}<div class="nav-label">MI ESPACIO</div><nav class="nav" aria-label="Navegación principal">${Object.entries(labels).map(([key,label])=>`<button class="${page===key?'active':''}" ${page===key?'aria-current="page"':''} data-action="nav" data-page="${key}">${icon({card:'card',history:'history',profiles:'users',account:'settings'}[key])}<span>${label}</span></button>`).join('')}</nav><div class="sidebar-bottom"><button class="text-button" data-action="about">${icon('help')}Acerca de Chedex</button><div class="powered">Una historia propia.<br>Un proyecto de <strong>TopChess</strong></div></div></aside><div class="workspace">${me.demo?'<div class="demo-banner">Estás explorando una demo con datos de ejemplo. <button data-action="exit-demo">Crear mi cuenta real</button></div>':''}<header class="topbar"><div class="topbar-crumb"><span>Mi espacio</span><span> / </span><strong>${labels[page]}</strong></div><div class="topbar-right"><button class="icon-btn" data-action="appearance" aria-label="Cambiar modo claro u oscuro">${icon(theme==='dark'?'sun':'moon')}</button><button class="topbar-user" data-action="nav" data-page="account">${avatar(me.profile)}<span>${escape(me.profile.name)}</span></button></div></header><main id="main" class="content">${page==='card'?dashboard():page==='history'?historyPage():page==='account'?accountPage():profilesPage()}<footer class="footer"><span>Tu historia en el ajedrez, siempre contigo.</span><span>chedex. <span aria-hidden="true">·</span> Impulsado por TopChess</span></footer></main></div>`;if(page==='profiles')loadFavorites();if(page==='history'&&['tournaments','achievements'].includes(historyTab))loadHistory();if(page==='history'&&historyTab==='statistics')loadStatistics();const privacy=$('#privacy-form');if(privacy)privacy.dataset.baseline=formSnapshot(privacy);document.title='Chedex · Tu historia en el ajedrez';}
-function heading(title,description,actions=''){return `<div class="page-heading spread"><div><h1>${title}</h1><p>${description}</p></div>${actions?`<div class="actions">${actions}</div>`:''}</div>`;}
-function onboarding(){
-  if(me.demo || me.totalEntries || me.profile.public)return '';
-  return `<section class="onboarding panel" aria-label="Tus primeros pasos"><div><span class="eyebrow">YA TIENES TU CHEDEX</span><h2>Ahora, hazlo tuyo.</h2><p>Tu tarjeta ya existe y es privada. Completa solo lo que te apetezca; podrás cambiarlo después.</p></div><div class="onboarding-actions">${btn('1. Completar perfil','edit-profile','edit')}${btn('2. Añadir un torneo','add-tournament','trophy')}${btn('3. Elegir qué compartir','privacy','lock')}</div></section>`;
-}
-async function administration(){
-  const state=await api('/api/admin');
-  openDialog('Administración de Chedex',`<div class="notice">Acceso autorizado por tu identidad de Lichess. Este panel no muestra historiales privados ni permite otorgar verificaciones.</div><div class="stat-line"><span>Cuentas reales</span><strong>${state.users}</strong></div><div class="stat-line"><span>Torneos registrados</span><strong>${state.records.tournaments||0}</strong></div><div class="stat-line"><span>Logros registrados</span><strong>${state.records.achievements||0}</strong></div><div class="stat-line"><span>Base de datos</span><strong>${escape(state.database)}</strong></div><div class="stat-line"><span>Conexión HTTPS</span><strong>${state.https?'Activa':'Pendiente de alojamiento'}</strong></div><div class="stat-line"><span>Apple Wallet</span><strong>${state.apple.ready?'Configurado':'Pendiente de certificados o HTTPS'}</strong></div><p class="small muted">Retorno de Lichess: ${escape(state.callback)}</p>`);
-}
-function metrics(stats=me.stats,drill=false){return `<div class="metrics">${[
-  ['trophy','Torneos registrados',stats.tournaments,'Un torneo, una experiencia'],['chess','Partidas guardadas','—','Importación PGN próximamente'],['chart','Puntos obtenidos',stats.percentage===null?'—':`${stats.percentage}%`,stats.rounds?`${stats.points} de ${stats.rounds} puntos registrados`:'Añade puntos y rondas'],['medal','Logros conseguidos',stats.achievements,'Momentos que importan']
-].map(([i,label,value,sub])=>`<article class="metric panel"><div class="metric-top"><span>${label}</span>${icon(i)}</div><strong>${value}</strong><small>${sub}</small>${drill&&i!=='chess'&&(i!=='medal'||!statsFilters.mode)?btn(i==='medal'?'Ver logros':'Ver torneos','stats-history','arrow','',`data-kind="${i==='medal'?'achievements':'tournaments'}" data-scored="${i==='chart'}"`):''}</article>`).join('')}</div>`;}
-function dashboard(){const p=me.profile;return `${heading('Mi tarjeta','Tu identidad ajedrecística. Lista para acompañarte.',btn('Editar perfil','edit-profile','edit'))}${onboarding()}<div class="dashboard-grid"><section class="card-section panel"><div class="section-heading spread"><h2>Tu Chedex</h2><span class="pill violet">${icon('chess')}${escape(roles[p.role])}</span></div><div class="card-stage">${card(p,me.id)}<div class="card-caption">${icon('shield')}Tu tarjeta. Tu historia. Tu identidad.</div></div><div class="card-toolbar">${btn('Ver como visitante','preview','globe')+btn('Diseños','customize','edit')}${btn('Ver QR','qr','qr')}${btn('Descargar','download','download')}</div><div class="wallets"><p>Tu Chedex, también en el iPhone</p><div class="actions">${btn(config.wallet?.apple?'Añadir a Apple Wallet':'Apple Wallet · Próximamente','apple-wallet','wallet',config.wallet?.apple?'primary':'')}</div></div></section><div class="right-stack"><section class="share-panel panel"><div class="section-heading spread"><h2>Una tarjeta. Mil encuentros.</h2>${icon('share')}</div><p>Comparte tu perfil con quien comparte tu pasión. Tú decides qué mostrar.</p><div class="link-box"><span>${p.public?escape(me.publicUrl):'Tu enlace está protegido'}</span><button class="icon-btn" data-action="copy" aria-label="Copiar enlace">${icon('copy')}</button></div>${btn(p.public?'Compartir mi Chedex':'Configurar mi privacidad',p.public?'share':'privacy',p.public?'share':'lock','primary')}<div class="profile-status"><span><i class="dot ${p.public?'green':''}"></i>Perfil ${p.public?'público':'privado'}</span><button class="text-button" data-action="${p.public?'view-public':'privacy'}">${p.public?'Ver perfil':'Gestionar'}${icon('external')}</button></div></section><section class="tip-panel panel">${icon('info')}<div><h3>Tu historia va más allá del Elo.</h3><p>Tu primer torneo, un logro especial o ese club en el que empezó todo. Cada paso tiene su lugar en Chedex.</p></div></section></div></div>${metrics()}<section class="recent panel"><div class="section-heading spread"><h2>Los últimos movimientos</h2><button class="text-button" data-action="nav" data-page="history">Ver mi historial ${icon('arrow')}</button></div>${me.entries.length?me.entries.slice(0,3).map(e=>entryRow(e)).join(''):empty('Tu historia empieza aquí','Añade tu primer torneo o logro. No hace falta tener Elo.','Añadir torneo','add-tournament')}</section><p class="small muted">Las estadísticas reflejan únicamente la actividad que has registrado en Chedex.</p>`;}
-function empty(title,description,label='',action=''){return `<div class="empty">${icon('chess')}<h3>${title}</h3><p>${description}</p>${label?btn(label,action,'plus','violet'):''}</div>`;}
-function entryRow(e,editable=false){
-  const d=e.data,tournament=e.kind==='tournaments';
-  const details=[...(tournament?[['Localidad',d.city],['Organizador',d.organizer],['Ritmo',d.timeControl],['Rondas',d.rounds],['Participantes',d.participants],['Elo declarado',d.elo]]:[]),['Notas',editable?d.notes:'']].filter(([,v])=>v!==''&&v!==null&&v!==undefined);
-  return `<article class="entry"><div class="entry-icon">${icon(tournament?'trophy':'medal')}</div><div class="entry-main"><h3>${escape(d.name)}</h3><p>${friendlyDate(d.date)} · ${escape(d.mode||d.category)}</p><span class="pill ${d.source?'green':''}">${escape(d.status)}</span>${details.length||d.source?`<details class="entry-details"><summary>Ver detalles</summary><dl>${details.map(([label,value])=>`<div><dt>${label}</dt><dd>${escape(value)}</dd></div>`).join('')}</dl>${d.source?`<a class="text-button" href="${escape(d.source)}" target="_blank" rel="noopener noreferrer">Consultar fuente ${icon('external')}</a>`:''}</details>`:''}</div><div class="entry-right">${tournament?(d.points!==null?`${d.points} <span class="muted">/ ${d.rounds}</span>`:'—'):icon('medal')}<small>${tournament?(d.position?`${d.position}º${d.participants?` de ${d.participants}`:''}`:'Sin clasificación'):'Un nuevo hito'}</small></div>${editable?`<div class="entry-tools">${btn('Editar','edit-entry','edit','',`data-id="${e.id}"`)}${tournament?btn('Duplicar','duplicate-entry','copy','',`data-id="${e.id}"`):''}${btn('Eliminar','delete-entry','trash','',`data-id="${e.id}"`)}</div>`:''}</article>`;
-}
-function groupedRows(entries,editable=false){
-  let previous='';return entries.map(e=>{const year=e.data.date.slice(0,4),heading=year!==previous?`<h2 class="history-year">${year}</h2>`:'';previous=year;return heading+entryRow(e,editable);}).join('');
-}
-function filterControls(stats=false){
-  const f=stats?statsFilters:historyFilters,years=me.historyYears||Object.keys(me.stats.years).reverse();
-  return `<form id="${stats?'stats':'history'}-filters" class="history-filters">${stats?'':field('Buscar por nombre','search',f.search,'search','maxlength="140" placeholder="Nombre del torneo o logro"')}${select('Temporada','year',f.year,[['','Todos los años'],...years])}${stats||historyTab==='tournaments'?select('Modalidad','mode',f.mode,[['','Todas'],'Clásicas','Rápidas','Blitz','Otras']):''}${stats?'':select('Orden','sort',f.sort,[['newest','Más recientes'],['oldest','Más antiguos'],['name','Nombre A–Z']])}${stats?'':`<button class="btn" type="submit">Buscar</button>`}${btn('Limpiar filtros',stats?'stats-reset':'history-reset')}</form>`;
-}
-function historyPage(){
-  return `${heading('Mi historial','Encuentra y conserva cada etapa de tu camino.',btn('Añadir torneo','add-tournament','plus','primary')+btn('Añadir logro','add-achievement','medal'))}<div class="tabs" role="tablist" aria-label="Historial">${[['tournaments','Torneos'],['achievements','Logros'],['statistics','Estadísticas'],['games','Partidas']].map(([key,label])=>`<button role="tab" aria-selected="${historyTab===key}" class="${historyTab===key?'active':''}" data-action="history-tab" data-tab="${key}">${label}${['tournaments','achievements'].includes(key)?` (${key==='tournaments'?me.stats.tournaments:me.stats.achievements})`:''}</button>`).join('')}</div>${historyTab==='statistics'?statisticsPage():historyTab==='games'?`<section class="panel">${empty('Tus partidas tendrán su lugar','La biblioteca de partidas y la importación PGN llegarán en una próxima versión. Puedes registrar tus torneos desde ahora.')}</section>`:`${filterControls()}${historyFilters.scored?`<div class="notice">Mostrando torneos con puntos y rondas registrados. ${btn('Ver todos','history-unscored')}</div>`:''}<section class="history-panel panel"><p id="history-summary" class="small muted" role="status">Cargando historial…</p><div id="history-results" aria-busy="true"></div><div id="history-pagination"></div></section>`}`;
-}
-async function loadHistory(more=false){
-  const request=++historyRequest,kind=historyTab,query=new URLSearchParams({...historyFilters,mode:kind==='achievements'?'':historyFilters.mode,scored:kind==='achievements'?'false':String(historyFilters.scored),kind,offset:more?historyNext||0:0});
-  const target=$('#history-results');if(!target)return;target.setAttribute('aria-busy','true');
-  try{
-    const data=await api('/api/history?'+query);if(request!==historyRequest||historyTab!==kind||!$('#history-results'))return;
-    historyRows=more?[...historyRows,...data.items]:data.items;historyNext=data.next;
-    $('#history-summary').textContent=`${data.total} ${kind==='tournaments'?'torneos':'logros'} · ${historyRows.length} mostrados`;
-    $('#history-results').innerHTML=historyRows.length?(historyFilters.sort==='name'?historyRows.map(e=>entryRow(e,true)).join(''):groupedRows(historyRows,true)):empty('No hay registros que mostrar','Prueba con otros filtros o añade un nuevo registro.');
-    $('#history-pagination').innerHTML=data.next!==null?btn('Cargar 25 más','history-more','plus'):'';
-  }catch(error){if(request===historyRequest&&$('#history-results'))$('#history-results').innerHTML=`<p class="error">${escape(error.message)}</p>${btn('Reintentar','history-retry')}`;}
-  finally{if(request===historyRequest)$('#history-results')?.setAttribute('aria-busy','false');}
-}
-function eloChart(elo,mode){const all=elo.filter(e=>e.mode===mode),data=all.length>120?Array.from({length:120},(_,i)=>all[Math.round(i*(all.length-1)/119)]):all;if(data.length<2)return '';const min=Math.min(...data.map(x=>x.elo))-30,max=Math.max(...data.map(x=>x.elo))+30;const points=data.map((e,i)=>[35+i*(430/(data.length-1)),145-(e.elo-min)/(max-min)*115]);return `<h3 class="small">${escape(mode)}</h3>${all.length>120?`<p class="small muted">Vista resumida: 120 de ${all.length} registros, incluidos el primero y el último.</p>`:''}<svg class="chart" viewBox="0 0 500 180" role="img" aria-label="Evolución de Elo declarado en ${escape(mode)}"><line x1="35" y1="145" x2="465" y2="145"/><path d="M${points.map(p=>p.join(',')).join(' L')}"/>${points.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="3"><title>${friendlyDate(data[i].date)}: ${data[i].elo}</title></circle>`).join('')}<text x="35" y="168">${data[0].date}</text><text x="390" y="168">${data.at(-1).date}</text><text x="4" y="25">${max-30}</text><text x="4" y="140">${min+30}</text></svg>`;}
-function statisticsPage(){return `${filterControls(true)}<div class="notice">Solo se contabiliza tu actividad registrada. No se deducen victorias, tablas ni derrotas a partir de las puntuaciones de los torneos.</div><div id="statistics-results" aria-live="polite">Cargando estadísticas…</div>`;}
-async function loadStatistics(){
-  const request=++statsRequest;try{
-    const s=await api('/api/statistics?'+new URLSearchParams(statsFilters));if(request!==statsRequest||!$('#statistics-results'))return;
-    const charts=[...new Set(s.elo.map(e=>e.mode))].map(mode=>eloChart(s.elo,mode)).filter(Boolean);
-    $('#statistics-results').innerHTML=`<p class="small muted stats-scope">${statsFilters.year||'Todas las temporadas'} · ${escape(statsFilters.mode||'Todas las modalidades')}${statsFilters.mode?' · Los logros no se asignan a una modalidad.':''}</p>${metrics(s,true)}<div class="stats-columns"><section class="panel stat-list"><h2>Actividad por año</h2>${Object.entries(s.years).reverse().map(([year,count])=>`<button class="stat-line" data-action="stats-year" data-year="${year}"><span>${year}</span><strong>${count} torneos ${icon('arrow')}</strong></button>`).join('')||'<p class="muted small">Sin torneos para estos filtros.</p>'}</section><section class="panel stat-list"><h2>Tus modalidades</h2>${Object.entries(s.modes).map(([mode,count])=>`<button class="stat-line" data-action="stats-mode" data-mode="${escape(mode)}"><span>${escape(mode)}</span><strong>${count} ${icon('arrow')}</strong></button>`).join('')||'<p class="muted small">Sin modalidades para estos filtros.</p>'}</section><section class="panel stat-list full"><h2>Evolución de Elo</h2><p class="small muted">Valores declarados en torneos, separados por modalidad. No equivalen a un historial oficial FIDE.</p>${charts.join('')||empty('Todavía faltan datos','Se necesitan al menos dos valores de Elo de la misma modalidad dentro de los filtros seleccionados.')}</section></div>`;
-  }catch(error){if(request===statsRequest&&$('#statistics-results'))$('#statistics-results').innerHTML=`<p class="error">${escape(error.message)}</p>${btn('Reintentar','stats-retry')}`;}
-}
-function field(label,name,value='',type='text',attrs='',hint=''){return `<label class="field">${label}<input type="${type}" name="${name}" value="${escape(value)}" ${attrs}>${hint?`<small>${hint}</small>`:''}</label>`;}
-function select(label,name,value,options){return `<label class="field">${label}<select name="${name}" aria-label="${escape(label)}">${options.map(o=>{const [v,l]=Array.isArray(o)?o:[o,o];return `<option value="${escape(v)}" ${v===value?'selected':''}>${escape(l)}</option>`;}).join('')}</select></label>`;}
-function detailsGroup(title,html){return '<details class="form-details wide"><summary>'+title+'</summary><div class="form-grid">'+html+'</div></details>';}
-function profileForm(){
-  const p=me.profile;
-  openDialog('Tu identidad, a tu manera',`<form id="profile-form"><div class="form-grid">
-    ${field('Nombre público o alias *','name',p.name,'text','required maxlength="70" autocomplete="nickname"')}
-    ${select('Soy…','role',p.role,Object.entries(roles))}
-    ${field('Club','club',p.club,'text','maxlength="100"')}
-    ${field('Avatar','avatarFile','','file','accept="image/png,image/jpeg,image/webp"','Opcional. PNG, JPG o WebP de hasta 280 KB.')}
-    ${p.avatar?'<button class="text-button wide" type="button" data-action="remove-avatar">Quitar avatar actual</button>':''}
-    <label class="field wide">Sobre ti<textarea name="bio" maxlength="400" placeholder="¿Qué lugar ocupa el ajedrez en tu vida?">${escape(p.bio)}</textarea></label>
-    ${detailsGroup('Mi trayectoria y ubicación (opcional)',field('País','country',p.country,'text','maxlength="60"')+field('Localidad','city',p.city,'text','maxlength="80"')+field('Escuela','school',p.school,'text','maxlength="100"')+field('Año de inicio','started',p.started,'number',`min="1800" max="${new Date().getFullYear()}"`))}
-    ${detailsGroup('Elo y títulos (opcional)',field('Elo FIDE clásico','fideStandard',p.fideStandard,'number','min="0" max="4000"')+field('Elo FIDE rápido','fideRapid',p.fideRapid,'number','min="0" max="4000"')+field('Elo FIDE blitz','fideBlitz',p.fideBlitz,'number','min="0" max="4000"')+field('Título reconocido (declarado)','title',p.title,'text','maxlength="12"','No equivale a una verificación oficial.')+field('Perfil oficial FIDE','fideUrl',p.fideUrl,'url','maxlength="500" placeholder="https://…"'))}
-    ${detailsGroup('Enlaces y contacto (opcional)',field('Lichess','lichess',p.lichess,'url','maxlength="500" placeholder="https://lichess.org/@/…"')+field('Chess.com','chesscom',p.chesscom,'url','maxlength="500" placeholder="https://chess.com/member/…"')+field('Web o red social','social',p.social,'url','maxlength="500" placeholder="https://…"')+field('Contacto (oculto por defecto)','contact',p.contact,'text','maxlength="150"'))}
-    </div><p class="form-error" role="alert"></p><div class="form-actions">${btn('Cancelar','close')}<button class="btn primary" type="submit">Guardar perfil</button></div></form>`,'Empieza por lo esencial. Puedes completar el resto cuando quieras.');
-}
-function entryForm(kind,id,duplicate=false){const e=[...historyRows,...me.entries].find(e=>e.id===id),today=new Date().toLocaleDateString('en-CA'),d=duplicate?tournamentDraft(e.data,today):e?.data||tournamentDraft(null,today,localStorage.getItem('chedex-last-mode-'+me.id)||lastMode),t=kind==='tournaments';openDialog(duplicate?'Duplicar torneo':e?'Editar registro':t?'Un nuevo torneo en tu historia':'Un momento para recordar',`<form id="entry-form" data-kind="${kind}" data-id="${duplicate?'':id||''}"><div class="form-grid"><div class="wide">${field(t?'Nombre del torneo *':'Nombre del logro *','name',d.name,'text','required maxlength="140"')}</div>${field('Fecha *','date',d.date||new Date().toISOString().slice(0,10),'date','required')}${t?select('Modalidad','mode',d.mode||'Rápidas',['Clásicas','Rápidas','Blitz','Otras']):field('Tipo de logro','category',d.category||'Reconocimiento','text','maxlength="60"')}${t?detailsGroup('Resultados y detalles (opcional)',`${field('Localidad','city',d.city,'text','maxlength="80"')}${field('Organizador','organizer',d.organizer,'text','maxlength="100"')}${field('Ritmo de juego','timeControl',d.timeControl,'text','maxlength="50" placeholder="15 min + 10 s"')}${field('Rondas','rounds',d.rounds,'number','min="0" max="100"')}${field('Puntos obtenidos','points',d.points,'number','min="0" max="100" step="0.5"')}${field('Clasificación final','position',d.position,'number','min="1" max="100000"')}${field('Participantes','participants',d.participants,'number','min="1" max="100000"')}${field('Elo en esta modalidad (opcional)','elo',d.elo,'number','min="0" max="4000"')}`):''}<div class="wide">${field('Enlace a resultados o fuente','source',d.source,'url','maxlength="500" placeholder="https://…"','Una fuente aporta contexto; no equivale a una verificación oficial.')}</div><label class="field wide">Notas privadas<textarea name="notes" maxlength="800">${escape(d.notes)}</textarea><small>No aparecen en tu perfil público.</small></label></div><p class="form-error" role="alert"></p><div class="form-actions">${btn('Cancelar','close')}<button class="btn primary" type="submit">Guardar ${t?'torneo':'logro'}</button></div></form>`,duplicate?'Revisa la fecha. Los resultados, Elo, notas y fuente no se copian.':'Solo el nombre y la fecha son obligatorios.');}
-function toggleRow(label,name,checked,help=''){return `<div class="setting-row"><label for="${name}">${label}${help?`<small>${help}</small>`:''}</label><input id="${name}" type="checkbox" name="${name}" ${checked?'checked':''}></div>`;}
-function accountPage(){const p=me.profile;return `${heading('Mi cuenta','Tu información, siempre bajo tu control.',btn('Editar perfil','edit-profile','edit'))}<div class="settings-grid"><section class="settings-panel panel"><h2>Privacidad</h2><p>Tu perfil empieza siendo privado. Activa únicamente lo que quieras compartir.</p><form id="privacy-form">${toggleRow('Perfil público','public',p.public,'Permite consultar las secciones visibles mediante tu enlace o QR.')}<div class="setting-row"><label class="check-label"><input type="checkbox" name="adultConfirmed" ${p.adultConfirmed?'checked disabled':''}>Confirmo que tengo 18 años o más.</label></div><p class="small muted">Los perfiles de menores no pueden publicarse en esta versión. El procedimiento de autorización y controles está pendiente.</p>${[['information','Información del perfil'],['tournaments','Torneos'],['achievements','Logros'],['statistics','Estadísticas'],['contact','Datos de contacto']].map(([key,label])=>toggleRow(label,`visibility-${key}`,p.visibility[key])).join('')}<p class="form-error" role="alert"></p><div class="form-actions"><button class="btn primary" type="submit">Guardar privacidad</button></div></form></section><div class="right-stack"><section class="settings-panel panel"><h2>Apariencia</h2><p>Haz que tu espacio se sienta tuyo.</p><div class="actions">${btn(theme==='dark'?'Cambiar a modo claro':'Cambiar a modo oscuro','appearance',theme==='dark'?'sun':'moon')}${btn('Diseño de tarjeta','customize','card')}</div></section><section class="settings-panel panel"><h2>Tu enlace personal</h2><p>El enlace se conserva cuando actualizas tu perfil. Puedes invalidar el anterior y generar uno nuevo cuando lo necesites.</p><div class="link-box"><span>${escape(me.publicUrl)}</span><button class="icon-btn" data-action="copy" aria-label="Copiar enlace">${icon('copy')}</button></div>${btn('Ver como visitante','preview','globe')}${btn('Cambiar enlace','rotate','link')}</section><section class="settings-panel panel"><h2>Tus datos</h2><p>Descarga tu información en formato JSON o elimina tu cuenta y sus registros.</p><div class="actions">${btn('Exportar datos','export','download')}${btn('Eliminar cuenta','delete-account','trash','danger')}</div></section><section class="settings-panel panel"><h2>Sesión</h2>${me.isAdmin?btn('Administración','admin','shield','violet'):''}<p>${me.demo?'Demo local con datos de ejemplo.':'Acceso seguro a través de Lichess, sin una contraseña adicional.'}</p>${btn('Cerrar sesión','logout','logout')}</section></div></div>`;}
-function profilesPage(){return `${heading('Perfiles guardados','Las historias que quieres tener cerca.',btn('Consultar un perfil','lookup','qr','primary'))}<div class="notice">Consulta perfiles mediante su enlace o QR. Guarda los que te interesen, sin seguidores ni mensajes.</div><div class="saved-grid" id="favorites"><div class="empty">Cargando perfiles…</div></div>`;}
-async function loadFavorites(){try{const items=await api('/api/favorites');if(!$('#favorites'))return;$('#favorites').innerHTML=items.length?items.map(p=>`<article class="saved-item panel">${p.unavailable?'<h2>Perfil no disponible</h2><p>Su propietario ha restringido el acceso o cambiado su privacidad.</p>':`<h2>${escape(p.profile.name)}</h2><p>${escape(p.profile.club||roles[p.profile.role])}</p>`}<div class="actions">${!p.unavailable?`<a href="/p/${p.publicId}" class="btn">Ver perfil ${icon('arrow')}</a>`:''}${btn('Quitar','unfavorite','heart','ghost',`data-id="${p.id}"`)}</div></article>`).join(''):`<section class="panel full">${empty('Historias que merece la pena guardar','Cuando consultes un perfil público, podrás guardarlo aquí.','Consultar perfil','lookup')}</section>`;}catch(e){if($('#favorites'))$('#favorites').innerHTML=`<p class="error">${escape(e.message)}</p>`;}}
-async function publicPage(id,preview=false){try{publicCounts.tournaments=25;publicCounts.achievements=25;publicData=await api(preview?'/api/preview':`/api/public/${encodeURIComponent(id)}`);const u=publicData,p=u.profile;document.title=`${p.name} · Chedex`;root.innerHTML=`<main class="public-shell" id="main"><header class="spread">${brand()}<div class="actions">${preview?btn('Volver a mi espacio','preview-back','arrow'):me?btn('Guardar perfil','favorite','heart'):'<a class="btn primary" href="/auth/lichess">Crear mi Chedex</a>'}<a class="btn" href="${me?'/app':'/'}">${me?'Mi espacio':'Inicio'}</a></div></header>${preview?`<div class="notice"><strong>Vista como visitante</strong><br>${u.isPublic?'Tu perfil está público. Esto es lo que pueden consultar con tu enlace.':'Tu perfil sigue privado. Esta vista muestra lo que compartirías al activarlo; ahora los visitantes no pueden acceder.'} No se ha cambiado tu privacidad.</div>`:''}<section class="public-hero"><div><span class="pill violet">${escape(roles[p.role])}</span><h1>${escape(p.name)}</h1><p>${escape(p.bio||'Cada paso forma parte de una historia.')}</p><p>${escape([p.city,p.country].filter(Boolean).join(', '))}</p></div>${card(p,u.id,false)}</section><div class="public-sections">${p.visibility.information?`<section class="public-section panel"><h2>Su historia</h2><p>${p.club?`Club: ${escape(p.club)}<br>`:''}${p.school?`Escuela: ${escape(p.school)}<br>`:''}${p.started?`En el ajedrez desde ${escape(p.started)}<br>`:''}${p.title?`Título declarado: ${escape(p.title)}<br>`:''}</p><p class="small muted">La información del perfil es declarada por su propietario.</p><div class="profile-links">${[['fideUrl','FIDE'],['lichess','Lichess'],['chesscom','Chess.com'],['social','Web o red social']].filter(([key])=>p[key]).map(([key,label])=>`<a class="btn" href="${escape(p[key])}" target="_blank" rel="noopener noreferrer">${label}${icon('external')}</a>`).join('')}</div></section>`:''}${p.visibility.contact&&p.contact?`<section class="public-section panel"><h2>Contacto</h2><p>${escape(p.contact)}</p></section>`:''}${u.stats?`<section><h2>Actividad registrada</h2>${publicMetrics(u.stats)}<p class="small muted">Solo refleja los registros visibles en Chedex, no toda la trayectoria real.</p></section>`:''}${[['tournaments','Torneos'],['achievements','Logros']].filter(([key])=>p.visibility[key]).map(([key,label])=>`<section class="public-section panel"><h2>${label}</h2><div id="public-list-${key}">${publicRows(key)}</div></section>`).join('')}</div><footer class="footer"><span>Información gestionada por su propietario.</span><span>Impulsado por TopChess</span></footer></main>`;}catch(e){root.innerHTML=`<main id="main" class="public-shell">${brand()}${empty('Este perfil no está disponible',escape(e.message))}<a href="/" class="btn">Volver al inicio</a></main>`;}}
-function publicRows(kind){const entries=publicData.entries.filter(e=>e.kind===kind),shown=entries.slice(0,publicCounts[kind]);return `${groupedRows(shown)||'<p class="muted small">Sin registros públicos por el momento.</p>'}${(publicData.totals?.[kind]||entries.length)>shown.length?btn('Ver 25 más','public-more','plus','',`data-kind="${kind}"`):''}`;}
-async function renderPublicRows(kind){
-  const current=publicData,query=new URLSearchParams({kind,offset:publicCounts[kind]});
-  const data=await api((current.preview?'/api/preview':`/api/public/${current.publicId}`)+'?'+query);
-  if(publicData!==current)return;
-  const known=new Set(current.entries.map(e=>e.id));current.entries.push(...data.entries.filter(e=>!known.has(e.id)));current.totals=data.totals;publicCounts[kind]+=data.entries.length;
-  const target=document.getElementById('public-list-'+kind);if(target)target.innerHTML=publicRows(kind);
-}
-function publicMetrics(s){return `<div class="metrics">${[['Torneos',s.tournaments],['Logros',s.achievements],['Puntos obtenidos',s.percentage===null?'—':`${s.percentage}%`]].map(([a,b])=>`<div class="panel metric"><div class="metric-top">${a}</div><strong>${b}</strong></div>`).join('')}</div>`;}
-function needPublic(){if(!me.profile.public || me.demo){openDialog('Tu perfil está protegido',`<p class="muted">${me.demo?'La demo no publica datos. Accede con Lichess para crear y compartir tu tarjeta real.':'Tu perfil está privado: nadie puede consultar su historial mediante el enlace o QR. En Privacidad puedes activar el perfil público y elegir qué compartir. El contacto seguirá oculto salvo que lo habilites.'}</p><div class="form-actions">${btn('Entendido','close')}${!me.demo?btn('Ir a privacidad','privacy','lock','primary'):''}</div>`);return false;}return true;}
-function lookup(){openDialog('Encuentra otra historia',`<form id="lookup-form">${field('Enlace de un perfil Chedex','link','','url','required placeholder="'+escape(location.origin)+'/p/…"')}<p class="small muted">También puedes escanear un QR con la cámara de tu móvil y abrir su enlace.</p><p class="form-error" role="alert"></p><div class="form-actions"><button class="btn primary" type="submit">Consultar perfil ${icon('arrow')}</button></div></form>`);}
-function customize(){openDialog('Diseños y colores', '<div class="notice">Próximamente · Opción de pago</div><p class="muted">Los colores y diseños adicionales formarán parte de una futura opción de pago. Todavía no están disponibles y no hay precios ni planes anunciados.</p><p class="small muted">Tu nombre, avatar, información e historial siguen siendo editables en la versión gratuita.</p><div class="form-actions">'+btn('Entendido','close')+'</div>');}
-function confirmAction(title,description,action,label,extra=''){openDialog(title,`<p class="muted">${description}</p><div class="form-actions">${btn('Cancelar','close')}${btn(label,action,'','danger',extra)}</div>`);}
-function formSnapshot(form){return form?JSON.stringify([...new FormData(form)].map(([key,value])=>[key,typeof value==='string'?value:[value.name,value.size,value.size?value.lastModified:0]])):'';}
-function hasUnsavedChanges(){
-  const modal=dialog.open&&dialog.querySelector('form'),privacy=$('#privacy-form');
-  return !!(modal&&formSnapshot(modal)!==draftBaseline)||(!!privacy&&formSnapshot(privacy)!==privacy.dataset.baseline);
-}
-let discardPrompt;
-function mayDiscard(){
-  if(!hasUnsavedChanges())return true;
-  if(discardPrompt)return discardPrompt;
-  discardPrompt=new Promise(resolve=>{
-    const prompt=document.createElement('dialog');prompt.setAttribute('aria-labelledby','discard-title');prompt.innerHTML='<h2 id="discard-title">Tienes cambios sin guardar</h2><p class="muted">Puedes seguir editando o descartarlos para salir.</p><div class="form-actions"><button type="button" class="btn primary" data-discard="no">Seguir editando</button><button type="button" class="btn danger" data-discard="yes">Descartar cambios</button></div>';
-    const finish=discard=>{prompt.close();prompt.remove();discardPrompt=undefined;resolve(discard);};
-    prompt.addEventListener('click',event=>{const button=event.target.closest('[data-discard]');if(button){event.stopPropagation();finish(button.dataset.discard==='yes');}});
-    prompt.addEventListener('cancel',event=>{event.preventDefault();finish(false);});document.body.append(prompt);prompt.showModal();
-  });return discardPrompt;
-}
-async function closeDialog(){if(await mayDiscard())dialog.close();}
-function fieldError(form,error){
-  form.querySelectorAll('[aria-invalid]').forEach(el=>{el.removeAttribute('aria-invalid');el.removeAttribute('aria-describedby');});
-  form.querySelectorAll('.field-error').forEach(el=>el.remove());
-  const control=error.field&&form.elements.namedItem(error.field);
-  if(control instanceof HTMLElement){
-    control.closest('details')?.setAttribute('open','');
-    const message=document.createElement('small');message.className='field-error';message.id='error-'+error.field;message.textContent=error.message;
-    control.setAttribute('aria-invalid','true');control.setAttribute('aria-describedby',message.id);control.closest('.field').append(message);control.focus();
+menu.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMenu));
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && menuButton.getAttribute('aria-expanded') === 'true') {
+    closeMenu();
+    menuButton.focus();
   }
-  const summary=form.querySelector('.form-error');if(summary)summary.textContent=error.message;
-}
-function showUndo(entry,until){
-  undoItems.set(entry.id,{entry,until});let panel=$('#undo-panel');
-  if(!panel){panel=document.createElement('aside');panel.id='undo-panel';panel.className='undo-panel';panel.setAttribute('aria-label','Registros eliminados');document.body.append(panel);}
-  panel.innerHTML=[...undoItems.values()].map(({entry})=>`<div><span role="status">${escape(entry.data.name)} eliminado.<small>Disponible para deshacer durante 10 segundos.</small></span>${btn('Deshacer','undo-entry','history','',`data-id="${entry.id}"`)}</div>`).join('');
-  clearTimeout(undoTimer);undoTimer=setTimeout(expireUndo,Math.max(0,Math.min(...[...undoItems.values()].map(item=>item.until))-Date.now()));
-}
-function restoreUndoItems(){for(const item of me?.undo||[])showUndo({id:item.id,kind:item.kind,data:{name:item.name}},item.until);}
-function expireUndo(){
-  for(const [id,item] of undoItems)if(item.until<=Date.now())undoItems.delete(id);
-  $('#undo-panel')?.remove();const items=[...undoItems.values()];if(items.length){const {entry,until}=items[0];showUndo(entry,until);}
-}
-function applyHistoryFilters(){
-  const form=$('#history-filters');if(!form)return;
-  const values=Object.fromEntries(new FormData(form));Object.assign(historyFilters,values);loadHistory();
-}
-let searchTimer;
- document.addEventListener('input',event=>{
-  if(event.target.closest('#history-filters')){clearTimeout(searchTimer);searchTimer=setTimeout(applyHistoryFilters,250);}
- });
-document.addEventListener('change',event=>{
-  if(event.target.closest('#history-filters')){clearTimeout(searchTimer);applyHistoryFilters();}
-  if(event.target.closest('#stats-filters')){Object.assign(statsFilters,Object.fromEntries(new FormData($('#stats-filters'))));loadStatistics();}
 });
-dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog();});
-window.addEventListener('beforeunload',event=>{if(hasUnsavedChanges()){event.preventDefault();event.returnValue='';}});
-document.addEventListener('click',async event=>{
-  const el=event.target.closest('[data-action]');if(!el || el.disabled)return;const action=el.dataset.action;el.disabled=true;
-  try{
-    if(action.startsWith('home-')){event.preventDefault();return handleLandingAction(action,el);}
-    if(action==='close')return closeDialog();
-    if(['nav','privacy','appearance','preview','logout','exit-demo','remove-avatar'].includes(action)&&!await mayDiscard())return;
-    if(action==='demo'){el.disabled=true;await api('/api/demo','POST',{});location.href='/app';return;}
-    if(action==='nav'){navigateApp(el.dataset.page);window.scrollTo(0,0);return;}
-    if(action==='privacy'){dialog.close();navigateApp('account');window.scrollTo(0,0);return;}
-    if(action==='history-tab'){navigateApp('history',el.dataset.tab);return;}
-    if(action==='appearance'){theme=theme==='dark'?'light':'dark';localStorage.setItem('chedex-appearance',theme);document.body.classList.toggle('dark',theme==='dark');if(me&&!publicData)render();return;}
-    if(action==='edit-profile')return profileForm();
-    if(action==='remove-avatar'){await api('/api/profile','PUT',{avatar:''});await refresh();dialog.close();profileForm();return;}
-    if(action==='add-tournament')return entryForm('tournaments');
-    if(action==='add-achievement')return entryForm('achievements');
-    if(action==='edit-entry'||action==='duplicate-entry'){const e=historyRows.find(e=>e.id===el.dataset.id);if(e)return entryForm(e.kind,e.id,action==='duplicate-entry');return;}
-    if(action==='delete-entry')return confirmAction('¿Eliminar este registro?','Dejará de aparecer en tu historial y estadísticas. Tendrás diez segundos para deshacer.','confirm-delete-entry','Eliminar registro',`data-id="${el.dataset.id}"`);
-    if(action==='confirm-delete-entry'){const e=historyRows.find(e=>e.id===el.dataset.id);if(!e)return;const result=await api(`/api/entries/${e.kind}/${e.id}`,'DELETE');dialog.close();showUndo(e,result.undoUntil);await refresh();return;}
-    if(action==='undo-entry'){const item=undoItems.get(el.dataset.id);if(!item)return;await api(`/api/entries/${item.entry.kind}/${item.entry.id}/restore`,'POST',{});undoItems.delete(el.dataset.id);expireUndo();await refresh();return toast('Registro recuperado.');}
-    if(action==='history-more')return loadHistory(true);
-    if(action==='history-retry')return loadHistory();
-    if(action==='history-reset'){clearTimeout(searchTimer);Object.assign(historyFilters,{search:'',year:'',mode:'',sort:'newest',scored:false});return render();}
-    if(action==='history-unscored'){historyFilters.scored=false;return render();}
-    if(action==='stats-reset'){Object.assign(statsFilters,{year:'',mode:''});return render();}
-    if(action==='stats-retry')return loadStatistics();
-    if(['stats-history','stats-year','stats-mode'].includes(action)){
-      Object.assign(historyFilters,{search:'',sort:'newest',year:el.dataset.year||statsFilters.year,mode:el.dataset.mode||statsFilters.mode,scored:el.dataset.scored==='true'});
-      const kind=el.dataset.kind||'tournaments';if(kind==='achievements')historyFilters.mode='';
-      return navigateApp('history',kind);
-    }
-    if(action==='preview')return publicPage('',true);
-    if(action==='preview-back'){publicData=null;return render();}
-    if(action==='public-more')return renderPublicRows(el.dataset.kind);
-    if(action==='customize')return customize();
-    if(action==='admin')return administration();
-    if(action==='apple-wallet'){
-      if(!config.wallet?.apple)return openDialog('Chedex en Apple Wallet','<div class="notice">Próximamente · Pendiente de certificados de Apple</div><p class="muted">Podrás llevar tu tarjeta en el iPhone. Mientras tanto, tu QR, enlace y descarga como imagen siguen disponibles al activar tu perfil público.</p><div class="form-actions">'+btn('Entendido','close')+'</div>');
-      if(!needPublic())return;
-      openDialog('Añadir a Apple Wallet','<p class="muted">El pase guardará tu nombre, identificador y los datos esenciales que tengas públicos. Si los cambias, vuelve a descargarlo. El QR consulta siempre la privacidad actual de tu perfil.</p><div class="form-actions">'+btn('Cancelar','close')+'<a class="btn primary" href="/api/wallet/apple">Añadir a Apple Wallet</a></div>');return;
-    }
-    if(action==='qr'){if(!needPublic())return;openDialog('Un QR. Toda tu historia.',`<div class="qr-panel"><img src="/api/qr" alt="Código QR que abre tu perfil público"><p>Al escanearlo, se abre solo la información que has decidido compartir.</p><div class="form-actions">${btn('Copiar enlace','copy','copy')}${btn('Compartir','share','share','primary')}</div></div>`);return;}
-    if(action==='copy'){if(!needPublic())return;await navigator.clipboard.writeText(me.publicUrl);return toast('Enlace copiado.');}
-    if(action==='share'){if(!needPublic())return;if(navigator.share)await navigator.share({title:`${me.profile.name} · Chedex`,text:'Mi historia en el ajedrez, siempre conmigo.',url:me.publicUrl});else{await navigator.clipboard.writeText(me.publicUrl);toast('Enlace copiado para compartir.');}return;}
-    if(action==='view-public'){if(!needPublic())return;location.href=`/p/${me.publicId}`;return;}
-    if(action==='download'){if(!needPublic())return;await downloadCard();return;}
-    if(action==='lookup')return lookup();
-    if(action==='favorite'){await api(`/api/favorites/${publicData.id}`,'POST',{});return toast('Perfil guardado.');}
-    if(action==='unfavorite'){await api(`/api/favorites/${el.dataset.id}`,'DELETE');return loadFavorites();}
-    if(action==='rotate')return confirmAction('¿Cambiar tu enlace público?','El enlace y los QR anteriores dejarán de funcionar. Tu historial se conserva. Tendrás que volver a descargar las tarjetas que quieras compartir.','confirm-rotate','Cambiar enlace');
-    if(action==='confirm-rotate'){await api('/api/rotate-link','POST',{});dialog.close();await refresh();return toast('Nuevo enlace generado. El anterior ya no funciona.');}
-    if(action==='export'){const data=await api('/api/export');saveBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'chedex-datos.json');return toast('Datos exportados.');}
-    if(action==='delete-account')return openDialog('Eliminar cuenta y datos',`<form id="delete-form"><p class="muted">Se eliminarán tu perfil, historial, favoritos y sesiones. Tu enlace y QR dejarán de dar acceso al perfil. No se puede deshacer.</p>${field('Escribe ELIMINAR para confirmar','confirm','','text','required pattern="ELIMINAR" autocomplete="off"')}<p class="form-error" role="alert"></p><div class="form-actions">${btn('Cancelar','close')}<button type="submit" class="btn danger">Eliminar definitivamente</button></div></form>`);
-    if(action==='logout'||action==='exit-demo'){await api('/api/logout','POST',{});location.href=action==='exit-demo'?'/auth/lichess':'/';return;}
-    if(action==='about')return openDialog('Chedex',`<p>Tu historia en el ajedrez, siempre contigo.</p><p class="muted">Un pasaporte ajedrecístico gratuito, impulsado por TopChess. Tú controlas tu historial y qué compartes. Los datos pueden ser declarados, tener una fuente o estar verificados mediante un procedimiento autorizado.</p><div class="notice">La verificación oficial está pendiente. Apple Wallet se habilitará al configurar los certificados. Nunca se verifica un título por adjuntar un enlace.</div>`);
-  }catch(e){if(e.name!=='AbortError')toast(e.message);}finally{el.disabled=false;}
+form.addEventListener('submit', event => {
+  event.preventDefault();
+  if (!form.reportValidity()) return;
+  const data = new FormData(form);
+  const subject = `Solicitud de reunión · Chedex · ${data.get('need')}`;
+  const body = `Hola, equipo de Chedex:\n\nMe gustaría concertar una primera reunión.\n\nNombre: ${data.get('name')}\nCorreo de respuesta: ${data.get('email')}\nMotivo: ${data.get('need')}\nFormato preferido: ${data.get('format')}\nDisponibilidad y zona horaria: ${data.get('availability')?.trim() || 'Por acordar'}\n\nQué me gustaría comentar:\n${data.get('message')?.trim() || 'Prefiero comentarlo en la reunión.'}\n\nQuedo pendiente de vuestra respuesta para acordar el día, la hora y el formato. Gracias.`;
+  window.location.href = `mailto:escuelatopchess@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  document.querySelector('#form-status').textContent = 'Revisa y envía la solicitud desde tu aplicación de correo. La reunión quedará pendiente de acordar con TopChess. Si no se abre el correo, escribe a escuelatopchess@gmail.com.';
 });
-document.addEventListener('submit',async event=>{
-  const form=event.target;event.preventDefault();if(form.id==='history-filters'){clearTimeout(searchTimer);applyHistoryFilters();return;}if(form.id==='stats-filters')return;const submit=form.querySelector('[type=submit]');if(!submit)return;submit.disabled=true;const error=form.querySelector('.form-error');if(error)error.textContent='';
-  try{
-    const data=Object.fromEntries(new FormData(form));
-    if(form.id==='profile-form'){
-      const file=data.avatarFile;delete data.avatarFile;
-      if(file?.size){if(file.size>280000)throw new Error('Usa un avatar de menos de 280 KB.');if(!['image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('Usa una imagen PNG, JPG o WebP.');data.avatar=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(new Error('No se pudo leer la imagen.'));r.readAsDataURL(file);});await loadImage(data.avatar);}
-      await api('/api/profile','PUT',data);draftBaseline='';dialog.close();await refresh();toast('Perfil actualizado.');
-    } else if(form.id==='entry-form'){
-      const {kind,id}=form.dataset;await api(`/api/entries/${kind}${id?'/'+id:''}`,id?'PUT':'POST',data);if(kind==='tournaments'){lastMode=data.mode;localStorage.setItem('chedex-last-mode-'+me.id,lastMode);}draftBaseline='';dialog.close();page='history';historyTab=kind;Object.assign(historyFilters,{search:'',year:'',mode:'',sort:'newest',scored:false});await refresh();toast(id?'Registro actualizado.':'Un nuevo paso en tu historia.');
-    } else if(form.id==='privacy-form'){
-      await api('/api/profile','PUT',{public:!!data.public,adultConfirmed:me.profile.adultConfirmed||!!data.adultConfirmed,visibility:Object.fromEntries(Object.keys(me.profile.visibility).map(k=>[k,!!data[`visibility-${k}`]]))});await refresh();toast('Privacidad actualizada.');
-    } else if(form.id==='delete-form'){await api('/api/account','DELETE',data);location.href='/';
-    } else if(form.id==='lookup-form'){
-      const u=new URL(data.link);if(u.origin!==location.origin || !/^\/p\/[A-Za-z0-9_-]{16}$/.test(u.pathname))throw new Error('Introduce un enlace de perfil de este Chedex.');location.href=u.pathname;
+
+function showPageSection(pathname, behavior = 'instant', focus = false) {
+  const section = document.getElementById(sectionRoutes[pathname]);
+  if (!section) return;
+  section.scrollIntoView({ behavior, block: 'start' });
+  if (focus) {
+    const heading = section.querySelector('h1, h2');
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
     }
-  }catch(e){if(error)fieldError(form,e);else toast(e.message);}finally{submit.disabled=false;}
-});
-function saveBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
-function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('No se pudo leer la imagen.'));img.src=src;});}
-async function downloadCard(){
-  // Se utiliza exactamente la proyección pública, nunca los datos privados del editor.
-  const data=await api(`/api/public/${me.publicId}`),p=data.profile;
-  const qrBlob=await (await fetch('/api/qr')).blob(),qrUrl=URL.createObjectURL(qrBlob);
-  try{const qr=await loadImage(qrUrl),canvas=document.createElement('canvas');canvas.width=1200;canvas.height=740;const c=canvas.getContext('2d');
-    c.fillStyle={midnight:'#222228',violet:'#3c3348',forest:'#2d4138'}[p.theme];c.fillRect(0,0,1200,740);
-    c.fillStyle='#fff';c.font='bold 46px sans-serif';c.fillText('chedex.',65,90);c.font='17px sans-serif';c.fillStyle='#c6cadd';c.fillText('TU PASAPORTE AJEDRECÍSTICO',690,82);
-    if(p.avatar){const img=await loadImage(p.avatar);c.save();c.beginPath();c.arc(125,260,60,0,Math.PI*2);c.clip();const side=Math.min(img.width,img.height);c.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,65,200,120,120);c.restore();}else{c.fillStyle='#ffffff12';c.beginPath();c.arc(125,260,60,0,Math.PI*2);c.fill();c.fillStyle='#ddd4f3';c.font='40px sans-serif';c.fillText(initials(p),92,275,80);}
-    c.fillStyle='#fff';c.font='bold 49px sans-serif';c.fillText(p.name,220,258,860);c.fillStyle='#bdc7dc';c.font='25px sans-serif';c.fillText(p.club||roles[p.role],220,302,840);
-    c.strokeStyle='#ffffff25';c.beginPath();c.moveTo(65,370);c.lineTo(1135,370);c.stroke();
-    c.fillStyle='#a6b2c8';c.font='16px sans-serif';c.fillText('IDENTIFICADOR CHEDEX',65,425);c.font='25px monospace';c.fillStyle='#fff';c.fillText(`CX · ${data.id.slice(0,8).toUpperCase()}`,65,466);
-    let x=65;for(const [key,label] of [['fideStandard','Clásico'],['fideRapid','Rápido'],['fideBlitz','Blitz']])if(p[key]){c.font='40px sans-serif';c.fillStyle='#fff';c.fillText(String(p[key]),x,555);c.font='18px sans-serif';c.fillStyle='#a6b2c8';c.fillText(label,x,587);x+=170;}
-    c.drawImage(qr,925,410,210,210);c.fillStyle='#b2bdd1';c.font='19px sans-serif';c.fillText('Tu historia en el ajedrez, siempre contigo.',65,685);c.font='15px sans-serif';c.fillText('Datos declarados por su propietario',65,715);
-    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('No se pudo generar la tarjeta.');saveBlob(blob,'mi-chedex.png');toast('Tarjeta descargada con los datos públicos.');
-  }finally{URL.revokeObjectURL(qrUrl);}
+  }
+  menu.querySelectorAll('a').forEach(link => {
+    if (sectionRoutes[new URL(link.href).pathname] === sectionRoutes[pathname]) link.setAttribute('aria-current', 'location');
+    else link.removeAttribute('aria-current');
+  });
 }
-async function boot(){const route=parseAppPath(location.pathname,location.hash);if(route){page=route.page;historyTab=route.tab;}try{config=await api('/api/config');try{me=await api('/api/me?compact=1');}catch{me=null;}if(location.pathname.startsWith('/p/'))await publicPage(location.pathname.split('/')[2]);else if(location.pathname==='/')landing();else if(me){render();restoreUndoItems();}else landing();}catch{root.innerHTML='<main id="main" class="loading">No se pudo conectar con Chedex. Recarga la página para intentarlo de nuevo.</main>';}}
-function navigateApp(nextPage,nextTab=historyTab){publicData=null;page=nextPage;historyTab=nextTab;const path=appPath(page,historyTab);if(location.pathname!==path||location.hash)history.pushState({},'',path);render();}
-window.addEventListener('popstate',async()=>{if(!await mayDiscard()){history.pushState({},'',appPath(page,historyTab));return;}dialog.close();if(location.pathname==='/'){landing();return;}const route=parseAppPath(location.pathname,location.hash);if(route&&me){page=route.page;historyTab=route.tab;render();}});
-document.querySelector('.skip').addEventListener('click',event=>{event.preventDefault();const main=document.getElementById('main');if(main){main.setAttribute('tabindex','-1');main.focus({preventScroll:true});main.scrollIntoView({behavior:'instant'});}});
-boot();
+
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[href]');
+  if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+  const url = new URL(link.href);
+  if (url.origin !== location.origin || !Object.hasOwn(sectionRoutes, url.pathname) || !document.getElementById(sectionRoutes[url.pathname])) return;
+  event.preventDefault();
+  closeMenu();
+  if (link.hasAttribute('data-skip')) {
+    const main = document.getElementById('contenido');
+    main.focus({ preventScroll: true });
+    main.scrollIntoView({ behavior: 'instant' });
+    return;
+  }
+  if (location.pathname !== url.pathname || location.hash || location.search) history.pushState(null, '', url.pathname);
+  showPageSection(url.pathname, matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', true);
+});
+
+history.scrollRestoration = 'manual';
+window.addEventListener('popstate', () => {
+  closeMenu();
+  document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+  showPageSection(location.pathname, 'instant', true);
+});
+
+// Previously shared section links keep working, then become clean paths.
+if (location.hash) {
+  const legacySection = location.hash.slice(1);
+  const path = Object.keys(sectionRoutes).find(path => sectionRoutes[path] === legacySection);
+  history.replaceState(null, '', path || location.pathname);
+}
+Promise.all([document.fonts.ready, servicesReady]).then(() => showPageSection(location.pathname));

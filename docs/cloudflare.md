@@ -1,40 +1,35 @@
-# Publicar Chedex en chedex.app
+# Despliegue de Chedex
 
-La web y el servidor se despliegan como **Cloudflare Worker con archivos estáticos**. Turso mantiene los datos. GitHub conserva el código. GitHub Pages no ejecuta las rutas de autenticación, privacidad ni firma de pases y no sirve como alojamiento único para esta aplicación.
+Se mantiene `wrangler.jsonc` con la cuenta, el Worker `chedex`, el dominio `chedex.app`, los recursos estáticos y la configuración existente.
 
-`wrangler.jsonc` configura `https://chedex.app`, el dominio personalizado, `AndresLi` como administrador de Lichess y la demo desactivada. No contiene credenciales. El arranque del servidor usa la compatibilidad oficial de Node HTTP de Cloudflare; la base remota usa el cliente web de libSQL. No se incluye SQLite en el Worker.
+Los secretos locales se conservan en `.env` y `.dev.vars`, ignorados por Git. Los secretos remotos de Cloudflare no se han modificado. No es necesario sustituir claves para este reinicio.
 
-## Primer despliegue
-
-1. Autoriza Wrangler con la cuenta de Cloudflare propietaria de `chedex.app`. Comprueba la cuenta con `npx wrangler whoami` antes de publicar. Si existe una web o ruta en ese dominio, revisa el conflicto antes de sustituirla.
-2. Ejecuta `npm ci`, `npm run check`, `npm test` y `npm run deploy:check`.
-3. Configura los secretos **del Worker**, no variables públicas ni archivos del repositorio:
+Comprueba el paquete sin publicar:
 
 ```sh
-npx wrangler secret put TURSO_DATABASE_URL
-npx wrangler secret put TURSO_AUTH_TOKEN
+npm run check
+npm run deploy:check
 ```
 
-Los comandos solicitan cada valor sin incluirlo en los argumentos. También pueden añadirse desde Workers & Pages → chedex → Settings → Variables and Secrets en Cloudflare. Deben existir antes de servir usuarios; la aplicación devolverá 503 si no puede conectar.
+Para publicar la nueva versión en el destino existente, cuando corresponda:
 
-4. Ejecuta `npm run deploy`. El dominio personalizado proporciona HTTPS. La cuenta debe tener acceso a la zona `chedex.app` y permisos para Workers y dominios.
-5. Comprueba `/healthz`, la portada, `/api/config` y el acceso público denegado a perfiles privados. Después prueba el acceso de Lichess en un navegador con la cuenta real autorizada.
+```sh
+npm run deploy
+```
 
-## Acceso con Lichess
+La web corporativa sirve `/`, `/servicios`, `/apoyo`, `/equipo`, `/colaboraciones`, `/proyectos`, `/contacto`, sus recursos estáticos y `/healthz`. Los alias con barra final y `/index.html` redirigen a la ruta canónica; las rutas de la aplicación antigua devuelven 404. El catálogo y `/admin` utilizan las claves existentes de Turso. El acceso administrativo utiliza Lichess con PKCE y retorno `https://chedex.app/auth/callback`, sin un secreto OAuth nuevo. Solo el ID autenticado `andresli` puede gestionar el catálogo. No se integra Apple Wallet.
 
-El identificador de cliente es `chedex.app` y el retorno es `https://chedex.app/auth/callback`. Lichess admite clientes públicos con PKCE y no requiere un secreto OAuth adicional. `AndresLi` es la identidad administradora; los demás usuarios entran con sus propias cuentas.
+Los datos nuevos se guardan en `chedex_v2_catalog`, `chedex_v2_oauth`, `chedex_v2_sessions` y `chedex_v2_limits`. Las tablas antiguas permanecen intactas. El servidor local nunca conecta con Turso.
 
-El panel de administración muestra únicamente contadores y estado de configuración. No revela historiales privados, tokens ni certificados y no concede verificaciones oficiales.
+`assets.html_handling` se fija a `none`: el Worker sirve explícitamente `index.html` y `admin.html`, manteniendo las rutas públicas limpias y evitando redirecciones automáticas en la vista administrativa. El dominio, la cuenta y el nombre del Worker se conservan.
 
-## Pruebas locales
+Tras publicar, comprobar portada, `/servicios`, `/api/services`, `/admin`, rechazo anónimo de `/api/admin/services` y acceso real con AndresLi. Los precios del catálogo inicial están desactivados.
 
-`npm run dev` ejecuta Node local y lee `.env`. Para comprobar el entorno de Cloudflare, `npx wrangler dev` lee `.dev.vars`, también ignorado por Git. No copies secretos a `wrangler.jsonc`. La URL configurada en producción sigue siendo `https://chedex.app`, aunque Wrangler sirva una vista local; no completes el acceso real desde esa vista hasta publicar el dominio.
 
-## Operación
+El área privada `/cuenta` y el panel `/admin` sirven documentos sin caché y con CSP. Las tablas aditivas de usuarios, proyectos y reseñas se inicializan con las mismas credenciales Turso existentes. El primer acceso de cada persona a Lichess la registra para poder asignarle proyectos. Las notas internas se filtran en el servidor y las reseñas solo son públicas tras moderación. No se necesita ningún secreto nuevo.
 
-- La aplicación no activa registros de observabilidad en Cloudflare, para evitar conservar códigos OAuth en URLs de retorno.
-- Configura copias de seguridad/recuperación de Turso y política de retención antes del lanzamiento público.
-- Revisa el uso y los límites de Cloudflare y Turso. No se ha contratado ningún plan de pago.
-- Los pases Apple necesitan sus secretos por separado; véase [Apple Wallet](apple-wallet.md).
+## Controles preparados tras la auditoría
 
-Referencias: [Node HTTP en Workers](https://developers.cloudflare.com/workers/runtime-apis/nodejs/http/), [dominios personalizados](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/), [secretos](https://developers.cloudflare.com/workers/configuration/secrets/).
+La configuración incorpora limpieza de registros caducados cada hora mediante `scheduled` y registros propios sin logs automáticos de invocación. Los errores se correlacionan mediante identificadores sin cuerpos, URLs, cookies ni credenciales. Consultar [mantenimiento de datos](mantenimiento-datos.md) para las limitaciones y comprobaciones previas a publicación. Estos cambios no se han desplegado durante la corrección local.
+
+Añadir a la comprobación posterior a publicación `/readyz`, las cabeceras efectivas, la limpieza programada y la recepción de un registro de prueba sin datos reales. La comprobación de preparación solo consulta el catálogo existente; no crea tablas mediante ese endpoint.

@@ -1,0 +1,18 @@
+import { icon } from './icons.js';
+
+const key='chedex_cookie_notice', version='2026-11-v1', duration=180*24*60*60*1000;
+function remembered(){try{const saved=JSON.parse(localStorage.getItem(key)||'null');return saved?.version===version&&saved.expires>Date.now();}catch{return false;}}
+const banner=document.createElement('section');banner.className='cookie-banner';banner.setAttribute('aria-label','Información sobre cookies');
+banner.innerHTML=`<span class="cookie-banner-symbol">${icon('check')}</span><div><p class="eyebrow">Tu privacidad, con las cosas claras</p><h2>Solo lo necesario para acompañarte.</h2><p>Usamos almacenamiento técnico para tu sesión y para recordar este aviso. Sin analítica ni publicidad. <a href="/cookies">Ver política de cookies</a>.</p></div><div class="cookie-banner-actions"><button class="cookie-details" data-cookie-details>Ver detalles</button><button class="button" data-cookie-understood>Entendido ${icon('check')}</button></div>`;
+banner.hidden=remembered();document.body.append(banner);
+const dialog=document.createElement('dialog');dialog.className='cookie-dialog';dialog.setAttribute('aria-labelledby','cookie-dialog-title');
+dialog.innerHTML=`<button class="dialog-close" aria-label="Cerrar información de cookies" data-cookie-close>${icon('close')}</button><p class="eyebrow">Tu navegador, tus datos</p><h2 id="cookie-dialog-title">Cookies, sin letra pequeña.</h2><p class="cookie-intro">La web no utiliza categorías opcionales. No necesitas aceptar analítica ni publicidad para usar Chedex.</p><div class="cookie-category"><div><h3>Necesarias</h3><span class="cookie-state">Siempre activas cuando se necesitan</span></div><p>Mantienen tu sesión, protegen la autorización con Lichess y muestran avisos técnicos. Para cerrar tu sesión, utiliza el botón de tu espacio.</p></div><div class="cookie-category"><div><h3>Analítica y publicidad</h3><span class="cookie-state is-off">No utilizadas</span></div><p>No medimos tu actividad con herramientas de analítica ni cargamos publicidad o píxeles de seguimiento.</p></div><div class="cookie-category"><div><h3>Recordar este aviso</h3><span class="cookie-state">Solo si pulsas Entendido</span></div><p>Guardamos tu elección en este navegador hasta 180 días. No se vincula con tu cuenta ni se envía al servidor.</p><button class="cookie-details" data-cookie-reset>Volver a mostrar el aviso</button></div><p class="cookie-intro">Puedes borrar o bloquear las cookies en tu navegador. Las de sesión son necesarias para mantener el acceso. <a href="/cookies">Consulta el inventario y los plazos</a>.</p><div class="cookie-dialog-actions"><button class="button" data-cookie-understood>Entendido ${icon('check')}</button></div>`;
+document.body.append(dialog);
+function understand(){try{localStorage.setItem(key,JSON.stringify({version,expires:Date.now()+duration}));}catch{/* The acknowledgement still works for this visit. */}banner.hidden=true;dialog.close();}
+document.addEventListener('click',event=>{
+  if(event.target.closest('[data-cookie-settings],[data-cookie-details]')){if(!dialog.open)dialog.showModal();}
+  if(event.target.closest('[data-cookie-understood]'))understand();
+  if(event.target.closest('[data-cookie-close]'))dialog.close();
+  if(event.target.closest('[data-cookie-reset]')){try{localStorage.removeItem(key);}catch{}dialog.close();banner.hidden=false;banner.querySelector('[data-cookie-understood]').focus();}
+});
+dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const bounds=dialog.getBoundingClientRect();if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)dialog.close();});
