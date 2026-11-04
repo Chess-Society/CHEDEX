@@ -434,10 +434,16 @@ nav a[aria-current="location"] { color: var(--ink); }
 @media(max-width:780px) { .bundle-card--project { grid-template-columns:1fr; }.bundle-card--project .bundle-visual { min-height:175px; }.bundle-card--project .bundle-visual svg { height:175px; }.bundle-card--project .bundle-copy { padding:23px; }.bundle-card--project .bundle-bottom .button { width:100%; } }
 
 /* Directional hover follows the mouse without moving the clickable layout. */
-.header-contact { transition:transform .15s,filter .15s,box-shadow .15s; }
+.button,.header-contact { position:relative; transition:transform .2s ease-out,background .2s,box-shadow .2s; }
+/* The transparent bridge preserves the hover target as its face lifts. */
+.button::after,.header-contact::after { content:""; position:absolute; inset:-8px; border-radius:inherit; }
 .button:focus-visible,.header-contact:focus-visible { outline:2px solid var(--orange,#f18b42); outline-offset:5px; }
 @media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
- .button[data-pointer-hover]:not(:active):not(:disabled),.header-contact[data-pointer-hover]:not(:active) { transform:perspective(650px) translate3d(var(--button-pointer-x,0px),calc(var(--button-pointer-y,0px) - 2px),0) rotateX(var(--button-tilt-x,0deg)) rotateY(var(--button-tilt-y,0deg)); filter:brightness(1.04); }
+ .button[data-pointer-hover]:not(:disabled):not([aria-disabled="true"]),.header-contact[data-pointer-hover]:not([aria-disabled="true"]) { transform:perspective(650px) translate3d(var(--button-pointer-x,0px),calc(var(--button-pointer-y,0px) - 6px),0) rotateX(var(--button-tilt-x,0deg)) rotateY(var(--button-tilt-y,0deg)); box-shadow:0 5px 0 #a85b27,0 9px 0 #302116,0 17px 28px #f18b423d,0 0 0 1px #f18b4266; }
+ .button:hover:not(:disabled),.header-contact:hover { box-shadow:0 5px 0 #a85b27,0 9px 0 #302116,0 17px 28px #f18b423d,0 0 0 1px #f18b4266; }
 }
 .ui-icon path[d="M7 17 17 7M7 7h10v10"],.ui-icon--external path,.ui-icon--up path,.ui-icon--down path,.ui-icon--back path { stroke-width:2.3; }
 @media(prefers-reduced-motion:reduce) { .button,.header-contact { transform:none !important; transition:none !important; } }
+
+/* Authentication links keep a fixed click target. */
+.button[href^="/auth/"] { transform:none !important; }

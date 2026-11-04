@@ -1,4 +1,5 @@
 const motionProperties = ['--button-pointer-x', '--button-pointer-y', '--button-tilt-x', '--button-tilt-y'];
+const staticButton = ':disabled, [aria-disabled="true"], .is-pending, [href^="/auth/"]';
 
 export function buttonMotion(clientX, clientY, bounds) {
   const normalize = (position, start, size) => Math.max(-1, Math.min(1, ((position - start) / Math.max(size, 1)) * 2 - 1));
@@ -15,7 +16,7 @@ export function buttonMotion(clientX, clientY, bounds) {
 export function initButtonEffects(root = document) {
   const view = root.defaultView;
   const motion = view.matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
-  let active, bounds, point, frame;
+  let active, bounds, point, frame, pressed = false;
 
   const reset = () => {
     if (frame !== undefined) view.cancelAnimationFrame(frame);
@@ -25,12 +26,14 @@ export function initButtonEffects(root = document) {
       for (const property of motionProperties) active.style.removeProperty(property);
     }
     active = undefined;
+    pressed = false;
   };
 
   const move = event => {
+    if (pressed) return;
     if (!motion.matches || event.pointerType !== 'mouse' || event.buttons) return reset();
     const button = event.target.closest?.('.button, .header-contact');
-    if (!button || button.matches(':disabled, [aria-disabled="true"], .is-pending')) return reset();
+    if (!button || button.matches(staticButton)) return reset();
     if (active !== button) {
       reset();
       active = button;
@@ -41,7 +44,7 @@ export function initButtonEffects(root = document) {
     if (frame !== undefined) return;
     frame = view.requestAnimationFrame(() => {
       frame = undefined;
-      if (!active?.isConnected || active.matches(':disabled, [aria-disabled="true"], .is-pending')) return reset();
+      if (!active?.isConnected || active.matches(staticButton)) return reset();
       for (const [property, value] of Object.entries(buttonMotion(point.x, point.y, bounds))) active.style.setProperty(property, value);
       active.setAttribute('data-pointer-hover', '');
     });
@@ -50,9 +53,20 @@ export function initButtonEffects(root = document) {
   root.addEventListener('pointerover', move, { passive: true });
   root.addEventListener('pointermove', move, { passive: true });
   root.addEventListener('pointerout', event => {
-    if (active && !active.contains(event.relatedTarget)) reset();
+    if (!pressed && active && !active.contains(event.relatedTarget)) reset();
   }, { passive: true });
-  root.addEventListener('pointerdown', reset, { passive: true });
+  root.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'mouse' || !active?.contains(event.target)) return reset();
+    // Keep the target in place until its native click has been dispatched.
+    pressed = true;
+    if (frame !== undefined) view.cancelAnimationFrame(frame);
+    frame = undefined;
+  }, { passive: true });
+  root.addEventListener('pointerup', event => {
+    pressed = false;
+    if (active && !active.contains(event.target)) reset();
+  }, { passive: true });
+  root.addEventListener('click', reset, { passive: true });
   root.addEventListener('pointercancel', reset, { passive: true });
   root.addEventListener('keydown', reset);
   view.addEventListener('blur', reset);
