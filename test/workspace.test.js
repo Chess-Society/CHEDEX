@@ -19,7 +19,7 @@ async function fixture(t) {
   }
   const call=async(user,path,body,method=body?'POST':'GET',extra={})=>api(new Request(origin+path,{method,headers:{cookie:cookies[user]||'',origin,'Content-Type':'application/json','X-Chedex-Request':'1',...extra},...(body?{body:JSON.stringify(body)}:{})}));
   const create=async(user='alice')=>{
-    const r=await call(user,'/api/projects',{title:'Objetivo de Alice',summary:'Conocer posibles centros para dar clases.',need:'Apoyo puntual',ownerId:'bob'});assert.equal(r.status,201);return (await r.json()).project;
+    const r=await call(user,'/api/projects',{firstName:'Persona',lastName:'Prueba',title:'Objetivo de Alice',summary:'Conocer posibles centros para dar clases.',need:'Apoyo puntual',ownerId:'bob'});assert.equal(r.status,201);return (await r.json()).project;
   };
   const edit=async(project,body)=>{
     const response=await call('andresli',`/api/admin/projects/${project.id}`,{revision:project.revision,...body},'PUT');assert.equal(response.status,200,await response.clone().text());return (await response.json()).project;
@@ -108,11 +108,85 @@ test('legitimate non-admin Lichess account can sign in without receiving adminis
 
 test('administrator can assign a project only to a registered account and project writes are rate limited',async t=>{
   const {call}=await fixture(t);
-  const values={title:'Proyecto asignado',summary:'Objetivo acordado',need:'Acompañamiento',ownerId:'alice'};
+  const values={firstName:'Persona',lastName:'Prueba',title:'Proyecto asignado',summary:'Objetivo acordado',need:'Acompañamiento',ownerId:'alice'};
   assert.equal((await call('andresli','/api/admin/projects',{...values,ownerId:'missing'})).status,400);
   assert.equal((await call('andresli','/api/admin/projects',values)).status,201);
   assert.equal((await (await call('alice','/api/projects')).json()).projects.length,1);
   const profile={bio:'',goals:'',email:'',links:[]};let response;
   for(let i=0;i<81;i++)response=await call('alice','/api/account/profile',profile,'PUT');
   assert.equal(response.status,429);
+});
+
+test('owners can archive and restore their projects with revisions; other accounts cannot',async t=>{
+ const {call,create,edit}=await fixture(t);let p=await create();
+ assert.equal((await call('bob',`/api/projects/${p.id}`,{action:'archive',archived:true,revision:p.revision},'PUT')).status,404);
+ assert.equal((await call('alice',`/api/projects/${p.id}`,{action:'details',revision:p.revision},'PUT')).status,403);
+ let response=await call('alice',`/api/projects/${p.id}`,{action:'archive',archived:true,revision:p.revision},'PUT');assert.equal(response.status,200);p=(await response.json()).project;assert.equal(p.archived,true);
+ assert.equal((await call('alice',`/api/projects/${p.id}/comments`,{text:'No',revision:p.revision})).status,400);
+ assert.equal((await call('alice',`/api/projects/${p.id}`,{action:'archive',archived:false,revision:1},'PUT')).status,409);
+ response=await call('alice',`/api/projects/${p.id}`,{action:'archive',archived:false,revision:p.revision},'PUT');assert.equal(response.status,200);p=(await response.json()).project;assert.equal(p.archived,false);
+ assert.equal((await call('alice',`/api/projects/${p.id}`,{action:'archive',archived:'true',revision:p.revision},'PUT')).status,400);
+ response=await call('andresli',`/api/admin/projects/${p.id}`,{action:'archive',archived:true,revision:p.revision},'PUT');assert.equal(response.status,200);
+ assert.match((await response.json()).project.history.at(-1).text,/archivado/);
+});
+
+test('deleting an archived project checks identity, title and revision and cleans related data atomically',async t=>{
+ const {db,call,create}=await fixture(t);let p=await create();const other=await create('bob');
+ const path=`/api/projects/${p.id}`;
+ assert.equal((await call('alice',path,{confirmTitle:p.title,revision:p.revision},'DELETE')).status,400);
+ let response=await call('alice',path,{action:'archive',archived:true,revision:p.revision},'PUT');p=(await response.json()).project;
+ assert.equal((await call('bob',path,{confirmTitle:p.title,revision:p.revision},'DELETE')).status,404);
+ assert.equal((await call('alice',path,{confirmTitle:'wrong',revision:p.revision},'DELETE')).status,400);
+ assert.equal((await call('alice',path,{confirmTitle:p.title,revision:1},'DELETE')).status,409);
+ assert.equal((await call('alice',path,{confirmTitle:p.title,revision:p.revision},'DELETE',{'X-Chedex-Request':''})).status,403);
+ await db("INSERT INTO chedex_v2_reviews VALUES ('deletion-review',?,?,5,'Review','approved',1)",[p.id,'alice']);
+ await db("INSERT INTO chedex_v2_slots (id,starts,ends) VALUES ('deletion-slot',1,2)");
+ await db("INSERT INTO chedex_v2_appointments (id,slot_id,project_id,owner_id,email,status,created_at) VALUES ('deletion-appointment','deletion-slot',?,'alice','test@example.com','cancelled',1)",[p.id]);
+ await db("CREATE TRIGGER refuse_preview_deletion BEFORE DELETE ON chedex_v2_appointments BEGIN SELECT RAISE(ABORT,'rollback test'); END");
+ response=await call('alice',path,{confirmTitle:p.title,revision:p.revision},'DELETE');assert.ok(response.status>=500);
+ assert.equal((await db('SELECT id FROM chedex_v2_projects WHERE id=?',[p.id])).length,1);assert.equal((await db("SELECT id FROM chedex_v2_reviews WHERE id='deletion-review'")).length,1);
+ await db('DROP TRIGGER refuse_preview_deletion');
+ response=await call('andresli',`/api/admin/projects/${p.id}`,{confirmTitle:p.title,revision:p.revision},'DELETE');assert.equal(response.status,200);
+ assert.equal((await db('SELECT id FROM chedex_v2_projects WHERE id=?',[p.id])).length,0);
+ assert.equal((await db("SELECT id FROM chedex_v2_reviews WHERE id='deletion-review'")).length,0);
+ assert.equal((await db("SELECT id FROM chedex_v2_appointments WHERE id='deletion-appointment'")).length,0);
+ assert.equal((await db("SELECT id FROM chedex_v2_slots WHERE id='deletion-slot'")).length,1);
+ assert.equal((await db('SELECT id FROM chedex_v2_projects WHERE id=?',[other.id])).length,1);
+ assert.equal((await call('alice',path)).status,404);
+});
+
+test('consulta por correo requiere confirmación y seguimiento solo avanza por fases con llamada inicial',async t=>{
+ const {call,db}=await fixture(t);
+ const body={firstName:'Demo',title:'Consulta por correo',need:'Apoyo puntual',summary:'Presentar mis clases',email:'demo@example.com',availability:'Martes por la tarde, Madrid',intakeMode:'email-template'};
+ assert.equal((await call('alice','/api/projects',body)).status,400);
+ assert.equal((await call('alice','/api/projects',{...body,emailSent:true,email:'bad'})).status,400);
+ let response=await call('alice','/api/projects',{...body,emailSent:true});assert.equal(response.status,201);
+ let p=(await response.json()).project;
+ assert.equal(p.progressPhase,'Por confirmar');assert.equal(p.history[0].phase,'Por confirmar');
+ assert.equal((await call('bob',`/api/projects/${p.id}`)).status,404);
+ assert.equal((await call('alice',`/api/projects/${p.id}`,{action:'progress',progressPhase:'Recibida',revision:p.revision},'PUT')).status,403);
+ assert.equal((await call('alice',`/api/projects/${p.id}/comments`,{text:'Texto',revision:p.revision})).status,400);
+ assert.equal((await call('andresli',`/api/admin/projects/${p.id}`,{action:'progress',progressPhase:'En marcha',revision:p.revision},'PUT')).status,400);
+ for(const phase of ['Recibida','Llamada de 15 min','Valoración','Propuesta acordada','En marcha','Completado']){
+  const oldRevision=p.revision;
+  response=await call('andresli',`/api/admin/projects/${p.id}`,{action:'progress',progressPhase:phase,note:'Nota visible',revision:p.revision},'PUT');assert.equal(response.status,200,await response.clone().text());p=(await response.json()).project;
+  assert.equal(p.progressPhase,phase);assert.equal(p.history.at(-1).phase,phase);
+  assert.equal((await call('andresli',`/api/admin/projects/${p.id}`,{action:'progress',progressPhase:phase,revision:oldRevision},'PUT')).status,409);
+  const visible=(await (await call('alice',`/api/projects/${p.id}`)).json()).project;assert.equal(visible.progressPhase,phase);assert.equal(visible.progressNote,'Nota visible');
+ }
+ assert.equal(p.stage,'Completado');assert.equal(p.requestStatus,'Aceptada');
+ response=await call('andresli',`/api/admin/projects/${p.id}`,{action:'progress',progressPhase:'No seguimos',note:'No encaja',revision:p.revision},'PUT');assert.equal(response.status,200);p=(await response.json()).project;assert.equal(p.requestStatus,'Denegada');assert.equal(p.decisionReason,'No encaja');
+ assert.equal((await call('andresli',`/api/admin/projects/${p.id}`,{action:'progress',progressPhase:'En marcha',revision:p.revision},'PUT')).status,400);
+ const listing=(await (await call('alice','/api/projects')).json()).projects.find(item=>item.id===p.id);assert.equal(listing.progressPhase,'No seguimos');
+ assert.equal((await db('SELECT count(*) AS n FROM chedex_v2_appointments WHERE project_id=?',[p.id]))[0].n,0);
+});
+
+test('desarrollo de proyectos admite una consulta por correo con su modalidad propia',async t=>{
+  const {call}=await fixture(t);
+  const response=await call('alice','/api/projects',{firstName:'Demo',title:'Escuela de ajedrez',summary:'Definir las clases y el plan inicial.',need:'Desarrollo de proyectos',intakeMode:'email-template',emailSent:true,email:'demo@example.com',availability:'Martes por la tarde, Madrid'});
+  assert.equal(response.status,201);
+  const {project}=await response.json();
+  assert.equal(project.need,'Desarrollo de proyectos');
+  assert.equal(project.intakeMode,'email-template');
+  assert.equal(project.progressPhase,'Por confirmar');
 });

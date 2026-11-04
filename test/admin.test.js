@@ -116,12 +116,13 @@ test('saved services persist, private drafts and hidden prices stay out of the p
   const services = structuredClone(defaultServices);
   services[0].title = 'Mi servicio actualizado';
   services[0].priceText = 'Texto económico privado';
+  services[0].showPrice = false;
   services[1].published = false;
   const response = await call('/api/admin/services', { method: 'PUT', headers: writeHeaders(sessionCookie), body: JSON.stringify({ revision: 1, services }) });
   assert.equal(response.status, 200);
   assert.equal((await response.json()).revision, 2);
   const publicData = await (await call('/api/services')).json();
-  assert.equal(publicData.services.length, 2);
+  assert.equal(publicData.services.length, 3);
   assert.equal(publicData.services[0].title, 'Mi servicio actualizado');
   assert.equal(publicData.services[0].priceText, undefined);
   assert.equal(JSON.stringify(publicData).includes('Texto económico privado'), false);
@@ -145,7 +146,7 @@ test('catalogue validation rejects malformed fields, duplicate IDs and empty vis
   for (const mutate of [
     services => { services[0].title = ''; },
     services => { services[1].id = services[0].id; },
-    services => { services[0].showPrice = true; },
+    services => { services[0].showPrice = true; services[0].priceText = ''; },
     services => { services[0].featured = 'yes'; },
     services => { services[0].graphic = '<script>'; },
   ]) {

@@ -1,5 +1,6 @@
 // Select-only comboboxes keep the native fields as the source of form values.
 const controls = new WeakMap();
+const nativeMode=matchMedia('(max-width: 780px), (pointer: coarse)');
 let active = null, sequence = 0;
 
 function close() {
@@ -23,6 +24,7 @@ export function enhanceSelects(root = document) {
     const id = `chedex-select-${++sequence}`;
     const caption = document.createElement('span');
     caption.id = `${id}-label`;
+    select.setAttribute('aria-labelledby',caption.id);
     caption.textContent = [...label.childNodes].filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent.trim()).filter(Boolean).join(' ');
     [...label.childNodes].filter(node => node.nodeType === Node.TEXT_NODE).forEach(node => node.remove());
     label.prepend(caption);
@@ -52,6 +54,8 @@ export function enhanceSelects(root = document) {
     const control = { wrapper, button, list, sync: () => {
       value.textContent = select.selectedOptions[0]?.textContent || 'Elige una opción';
       button.disabled = select.disabled;
+      select.tabIndex=nativeMode.matches?0:-1;select.setAttribute('aria-hidden',String(!nativeMode.matches));
+      button.tabIndex=nativeMode.matches?-1:0;button.setAttribute('aria-hidden',String(nativeMode.matches));
       items.forEach((item, position) => item.setAttribute('aria-selected', String(position === select.selectedIndex)));
     } };
     controls.set(select, control);
@@ -76,7 +80,7 @@ export function enhanceSelects(root = document) {
       select.dispatchEvent(new Event('change', { bubbles: true }));
     }
     button.addEventListener('click', event => { event.preventDefault(); active === control ? close() : open(); });
-    list.addEventListener('pointerdown', event => event.preventDefault());
+    list.addEventListener('pointerdown', event => { if(event.pointerType!=='touch')event.preventDefault(); });
     list.addEventListener('click', event => {
       const item = event.target.closest('[role="option"]');
       if (item) { event.preventDefault(); choose(Number(item.dataset.index)); }
@@ -100,7 +104,7 @@ export function enhanceSelects(root = document) {
       }
     });
     select.addEventListener('change', control.sync);
-    select.addEventListener('invalid', event => { event.preventDefault(); button.focus(); });
+    select.addEventListener('invalid', event => { if(!nativeMode.matches){event.preventDefault();button.focus();} });
     control.sync();
   });
 }
@@ -109,3 +113,5 @@ document.addEventListener('pointerdown', event => { if (active && !active.wrappe
 document.addEventListener('focusin', event => { if (active && !active.wrapper.contains(event.target)) close(); });
 document.addEventListener('close', close, true);
 document.addEventListener('cancel', event => { if (active) { event.preventDefault(); close(); } }, true);
+
+nativeMode.addEventListener('change',()=>{close();syncSelects();});

@@ -43,7 +43,9 @@ export async function maintainData({ database, action, user, output, confirm, ba
       const projects = db.prepare('SELECT id,revision,updated_at,content FROM chedex_v2_projects WHERE owner_id=? ORDER BY id').all(user)
         .map(row => clientProject({ id: row.id, revision: row.revision, updatedAt: row.updated_at, ...JSON.parse(row.content) }));
       const reviews = db.prepare('SELECT project_id AS projectId,rating,text,status,created_at AS createdAt FROM chedex_v2_reviews WHERE owner_id=? ORDER BY id').all(user);
-      const payload = { exportedAt: new Date().toISOString(), account: { ...account, profile: JSON.parse(account.profile) }, projects, reviews };
+      const hasAppointments = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chedex_v2_appointments'").get();
+      const appointments = hasAppointments ? db.prepare('SELECT a.id,a.project_id AS projectId,a.email,a.meeting_url AS meetingUrl,a.status,a.created_at AS createdAt,s.starts,s.ends FROM chedex_v2_appointments a JOIN chedex_v2_slots s ON s.id=a.slot_id WHERE a.owner_id=? ORDER BY a.created_at').all(user) : [];
+      const payload = { exportedAt: new Date().toISOString(), account: { ...account, profile: JSON.parse(account.profile) }, projects, appointments, reviews };
       db.exec('COMMIT');
       writeFileSync(resolve(output), JSON.stringify(payload, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
       return;
@@ -54,10 +56,12 @@ export async function maintainData({ database, action, user, output, confirm, ba
     // This command is an offline operation: stop the application before running it.
     db.exec('BEGIN IMMEDIATE');
     try {
+      if (db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chedex_v2_appointments'").get()) db.prepare('DELETE FROM chedex_v2_appointments WHERE owner_id=? OR project_id IN (SELECT id FROM chedex_v2_projects WHERE owner_id=?)').run(user, user);
       db.prepare('DELETE FROM chedex_v2_reviews WHERE owner_id=? OR project_id IN (SELECT id FROM chedex_v2_projects WHERE owner_id=?)').run(user, user);
       db.prepare('DELETE FROM chedex_v2_projects WHERE owner_id=?').run(user);
       db.prepare('DELETE FROM chedex_v2_sessions WHERE lichess_id=?').run(user);
       db.prepare('DELETE FROM chedex_v2_limits WHERE key GLOB ?').run(`workspace:${user}:*`);
+      if (db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chedex_v2_team'").get()) db.prepare("UPDATE chedex_v2_team SET role='disabled',revision=revision+1 WHERE lichess_id=?").run(user);
       db.prepare('DELETE FROM chedex_v2_users WHERE lichess_id=?').run(user);
       db.exec('COMMIT');
     } catch (error) { db.exec('ROLLBACK'); throw error; }

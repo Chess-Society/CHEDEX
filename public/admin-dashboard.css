@@ -124,3 +124,55 @@
   .dashboard-metrics>button>span:not(.metric-icon) { font-size:10px; line-height:1.6; }
   .dashboard-metrics small { display:none; }
 }
+
+/* Production follows the existing dashboard cards, typography and controls. */
+#team-root { min-width:0; }
+#team-root .dashboard-settings-card { margin-bottom:24px; padding:24px; }
+#team-root form { display:grid; gap:16px; margin-top:18px; }
+#team-root label { display:grid; gap:8px; }
+#team-root label.work-check { display:flex; align-items:center; }
+#team-root fieldset { border:1px solid #363b47; border-radius:12px; padding:16px; display:grid; gap:12px; }
+#team-root summary { cursor:pointer; padding:8px 0; font-weight:600; }
+#team-root .button { justify-self:start; }
+#team-root h4 { margin:14px 0 10px; }
+.team-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr)); gap:18px; margin:18px 0; }
+.team-cards > * { min-width:0; }
+.team-task { height:100%; }
+.team-specs { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-top:18px; font-size:13px; }
+.team-copy { white-space:pre-wrap; overflow-wrap:anywhere; }
+.team-project-picker { margin:0 0 24px; }
+#team-root .work-update p,#team-root a { overflow-wrap:anywhere; }
+#team-root .work-person-links { display:flex; flex-wrap:wrap; gap:18px; }
+@media(max-width:640px) { #team-root .dashboard-settings-card { padding:18px; } }
+
+/* People are accounts first; team permissions are explicit. */
+#admin-people { display:grid; grid-template-columns:1fr; gap:18px; }
+.people-directory-summary { font-size:12px; color:#aeb7c8; margin:16px 0; }
+.people-filters,.production-tabs { display:flex; flex-wrap:wrap; gap:9px; margin:18px 0 24px; }
+.people-filters button,.production-tabs button { display:flex; align-items:center; gap:12px; border:1px solid #3f444e; border-radius:10px; padding:12px 15px; min-height:44px; color:#d2d6df; background:linear-gradient(155deg,#292c34,#1d2027); box-shadow:0 3px 0 #080a0d; font-size:12px; }
+.people-filters button[aria-pressed=true],.production-tabs button[aria-pressed=true] { border-color:#b4794c; color:#ffc495; background:linear-gradient(155deg,#3b302b,#29252a); }
+.people-filters span { font:11px ui-monospace,monospace; color:#f0b184; }
+.people-row { min-width:0; padding:24px; background:linear-gradient(155deg,#202229,#181a20); border:1px solid #3c404a; border-radius:20px; box-shadow:0 6px 0 #080a0d; }
+.people-identity { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.people-avatar { width:42px; height:44px; display:grid; place-items:center; background:#302d32; color:#ffbb87; border:1px solid #65514a; border-radius:12px; box-shadow:0 4px 0 #090b0e; transform:rotate(-4deg); }
+.people-identity h3 { font-size:20px; margin:0 0 6px; overflow-wrap:anywhere; }
+.people-identity small { font-size:11px; color:#a8b0c1; }
+.people-identity>.work-badge { margin-left:auto; }
+.people-summary { display:flex; gap:18px; flex-wrap:wrap; color:#bdc4d0; font-size:12px; margin:21px 0; }
+.people-row form { display:flex; align-items:end; gap:16px; flex-wrap:wrap; }
+.people-row label { display:grid; gap:9px; min-width:220px; flex:1; font-size:12px; }
+.people-row .button { font-size:12px; min-height:45px; padding:12px 16px; }
+.people-permission { font-size:11px; line-height:1.8; color:#a5aebf; margin:17px 0 22px; }
+.people-profile { margin-top:22px; border-top:1px solid #353a44; padding-top:17px; font-size:12px; }
+.people-profile summary { cursor:pointer; color:#d0c1b3; }
+.people-profile p { color:#aeb7c8; margin-top:13px; white-space:pre-wrap; overflow-wrap:anywhere; }
+#add-team-person { display:grid; gap:18px; padding-top:18px; }
+.production-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:24px; }
+.production-metrics>div { border:1px solid #3b404b; border-radius:13px; background:#23252d; padding:18px; box-shadow:0 4px 0 #090b0f; }
+.production-metrics strong { display:block; color:#f7b584; font-size:27px; }
+.production-metrics span { display:block; color:#b7c0d0; font-size:11px; margin-top:9px; line-height:1.7; }
+#team-root .team-task>.button { width:100%; margin-top:20px; }
+#team-root [data-production-pane] { scroll-margin-top:100px; }
+.people-filters button:hover,.production-tabs button:hover { transform:translateY(-2px); }
+.people-filters button:active,.production-tabs button:active { transform:translateY(2px); box-shadow:0 1px 0 #080a0d; }
+@media(max-width:600px) { .people-row { padding:20px; }.people-identity { gap:12px; }.people-identity>.work-badge { margin-left:0; }.people-row form { align-items:stretch; flex-direction:column; }.people-row label { min-width:0; }.people-row .button { width:100%; justify-content:center; }.people-filters button,.production-tabs button { flex:1; justify-content:center; padding:12px; font-size:11px; }.production-metrics { gap:8px; }.production-metrics>div { padding:12px; }.production-metrics strong { font-size:22px; } }

@@ -1,0 +1,6 @@
+.pwa-install-dialog { width:min(520px,calc(100% - 32px)); max-height:calc(100dvh - 40px); overflow:auto; padding:32px; border:1px solid #393d45; border-radius:20px; color:#ecece8; background:#15171b; box-shadow:0 24px 90px #0009; }
+.pwa-install-dialog::backdrop { background:#000b; }
+.pwa-install-dialog h2 { font-size:clamp(25px,5vw,34px); line-height:1.15; margin:12px 0 20px; }
+.pwa-install-dialog p { line-height:1.65; }
+.pwa-install-dialog .pwa-install-note { color:#abb3c0; font-size:13px; }
+.pwa-install-dialog .button { margin-top:12px; }

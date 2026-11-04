@@ -1,6 +1,10 @@
 import { icon } from './icons.js';
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+const renderPrice = value => {
+  const [amount, ...conditions] = String(value).split(' · ');
+  return `<span class="service-price">${escape(amount)}${conditions.length ? `<small>${escape(conditions.join(' · '))}</small>` : ''}</span>`;
+};
 const graphics = {
   support: '<circle cx="195" cy="106" r="82" fill="#f18b4211"/><path d="m93 135 102-65 102 65" fill="none" stroke="#f18b42" stroke-width="3" stroke-dasharray="5 7"/><circle cx="93" cy="124" r="18" fill="#d9dde5"/><circle cx="195" cy="59" r="18" fill="#f18b42"/><circle cx="297" cy="124" r="18" fill="#d9dde5"/><path d="M63 165c0-33 60-33 60 0Zm102-65c0-33 60-33 60 0Zm102 65c0-33 60-33 60 0Z" fill="#292e38" stroke="#5c6472" stroke-width="2"/><path d="m184 139 8 8 18-20" fill="none" stroke="#f18b42" stroke-width="4"/>',
   school: '<circle cx="270" cy="90" r="72" fill="#f18b4212"/><path d="m122 78 70-45 70 45v96H122Z" fill="#262a32" stroke="#555b68"/><path d="m105 81 87-57 87 57" fill="none" stroke="#f18b42" stroke-width="4"/><rect x="175" y="129" width="34" height="45" rx="3" fill="#f18b42"/><path d="M143 94h17v17h-17Zm80 0h17v17h-17ZM143 131h17v17h-17Zm80 0h17v17h-17Z" fill="#c6ccd6"/><path d="M85 174h213" stroke="#737c8c" stroke-width="2"/><circle cx="192" cy="72" r="13" fill="#13171d" stroke="#f18b42"/><path d="M192 64v9h7" stroke="#f18b42" fill="none" stroke-width="2"/>',
@@ -14,9 +18,9 @@ export function renderServices(container, services) {
     container.innerHTML = '<p>Estamos preparando nuevas propuestas. Mientras tanto, cuéntanos qué necesitas.</p>';
     return;
   }
-  container.innerHTML = services.map(service => `<article class="bundle-card${service.featured ? ' featured' : ''}">
+  container.innerHTML = services.map(service => `<article class="bundle-card${service.featured ? ' featured' : ''}${service.id === 'desarrollo-proyectos' ? ' bundle-card--project' : ''}">
     <div class="bundle-visual"><span class="bundle-label">${escape(service.label)}</span><svg viewBox="0 0 390 205" aria-hidden="true">${graphics[service.graphic] || graphics.content}</svg><span class="bundle-watermark">CHEDEX / A TU MEDIDA</span></div>
-    <div class="bundle-copy"><h3>${escape(service.title)}</h3><p>${escape(service.description)}</p><ul>${service.features.map(feature => `<li>${escape(feature)}</li>`).join('')}</ul><div class="bundle-bottom">${service.priceText ? `<span class="service-price">${escape(service.priceText)}</span>` : ''}<button class="button" data-contact="${escape(service.profile)}" data-need="${escape(service.need)}">${escape(service.button)} <span aria-hidden="true">${icon('external')}</span></button></div></div>
+    <div class="bundle-copy"><h3>${escape(service.title)}</h3><p>${escape(service.description)}</p><div class="bundle-bottom">${service.priceText ? renderPrice(service.priceText) : ''}<a href="/servicios" class="button" aria-label="Ver detalles de ${escape(service.title)}">${service.id === 'desarrollo-proyectos' ? 'Ver servicio completo' : 'Ver paquete completo'} <span aria-hidden="true">${icon('external')}</span></a></div></div>
   </article>`).join('');
 }
 

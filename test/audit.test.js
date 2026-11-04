@@ -30,7 +30,7 @@ async function fixture(t) {
     method, headers: { cookie: cookies[user], origin, 'Content-Type': 'application/json', 'X-Chedex-Request': '1' },
     ...(body ? { body: JSON.stringify(body) } : {}),
   }));
-  const body = { title: 'Proyecto de prueba', summary: 'Datos ficticios de auditoría', need: 'Apoyo puntual' };
+  const body = { firstName: 'Persona', lastName: 'Prueba', title: 'Proyecto de prueba', summary: 'Datos ficticios de auditoría', need: 'Apoyo puntual' };
   return { db, call, body, now };
 }
 

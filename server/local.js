@@ -7,10 +7,14 @@ import { DatabaseSync } from 'node:sqlite';
 import { Readable } from 'node:stream';
 import { cleanupExpired, initializeStore } from './store.js';
 import { reportIncident, securityHeaders } from './security.js';
+import { pwaAssets, pwaHeaders } from './pwa-assets.js';
 
 const assets = new Map([
+  ...pwaAssets,
   ...Object.entries(documentRoutes).map(([path,file])=>[path,[file,'text/html; charset=utf-8']]),
   ['/legal.css', ['legal.css','text/css; charset=utf-8']],
+  ['/services.css', ['services.css','text/css; charset=utf-8']],
+  ['/la-chulapa.jpg', ['la-chulapa.jpg','image/jpeg']],
   ['/cookie-ui.js', ['cookie-ui.js','text/javascript; charset=utf-8']],
   ['/legal.js', ['legal.js','text/javascript; charset=utf-8']],
   ['/fonts/dm-sans-latin.woff2', ['fonts/dm-sans-latin.woff2','font/woff2']],
@@ -26,8 +30,13 @@ const assets = new Map([
   ['/icons.js', ['icons.js', 'text/javascript; charset=utf-8']],
   ['/workspace.css', ['workspace.css', 'text/css; charset=utf-8']],
   ['/workspace-ui.js', ['workspace-ui.js', 'text/javascript; charset=utf-8']],
+  ['/appointments-ui.js', ['appointments-ui.js', 'text/javascript; charset=utf-8']],
   ['/project-data.js', ['project-data.js', 'text/javascript; charset=utf-8']],
+  ['/team-workspace.js', ['team-workspace.js', 'text/javascript; charset=utf-8']],
+  ['/team-data.js', ['team-data.js', 'text/javascript; charset=utf-8']],
   ['/admin-workspace.js', ['admin-workspace.js', 'text/javascript; charset=utf-8']],
+  ['/interaction-ui.js', ['interaction-ui.js','text/javascript; charset=utf-8']],
+  ['/account-home.js', ['account-home.js','text/javascript; charset=utf-8']],
   ['/account.js', ['account.js', 'text/javascript; charset=utf-8']],
   ['/reviews.js', ['reviews.js', 'text/javascript; charset=utf-8']],
   ['/portal-nav.js', ['portal-nav.js', 'text/javascript; charset=utf-8']],
@@ -138,6 +147,7 @@ createServer(async (request, response) => {
     try {
       const [file, contentType] = assets.get(assetPath);
       const content = await readFile(new URL(`../public/${file}`, import.meta.url));
+    for (const [name, value] of Object.entries(pwaHeaders(pathname))) response.setHeader(name, value);
       response.writeHead(200, { 'Content-Type': contentType });
       response.end(request.method === 'HEAD' ? undefined : content);
     } catch (error) {

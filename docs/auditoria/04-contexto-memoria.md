@@ -1,5 +1,7 @@
 # Bloque 04 · Cómo consultar y conservar el contexto
 
+> Actualización del 3 de noviembre de 2026: tras la auditoría se conectó la memoria de trabajo a una carpeta específica de Obsidian. `AGENTS.md` ya existe en la raíz y consulta una configuración local excluida de Git. Véase [memoria de Obsidian](../memoria-obsidian.md). La descripción siguiente conserva el diagnóstico inicial; no se copiaron datos privados de la web a las notas.
+
 ## Separación de conceptos
 
 | Capa | Evidencia disponible | Límite |
