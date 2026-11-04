@@ -14,9 +14,15 @@
     "deploy:check": "wrangler deploy --dry-run --outdir .worker-build",
     "deploy": "wrangler deploy",
     "legal:build": "node scripts/render-legal.mjs",
-    "data:maintain": "node scripts/maintain-data.mjs"
+    "data:maintain": "node scripts/maintain-data.mjs",
+    "animations:build": "node scripts/build-animations.mjs",
+    "animations:check": "node scripts/build-animations.mjs --check"
   },
   "devDependencies": {
+    "esbuild": "0.28.2",
     "wrangler": "^4.156.1"
+  },
+  "dependencies": {
+    "animejs": "4.5.0"
   }
 }

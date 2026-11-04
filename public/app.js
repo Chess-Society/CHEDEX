@@ -12,6 +12,9 @@ document.querySelector('[data-project-skip]')?.addEventListener('click', event =
 const servicesContainer = document.querySelector('#services-catalog');
 const servicesReady = servicesContainer ? loadServices(servicesContainer) : Promise.resolve();
 
+// Optional decoration loads independently of navigation, forms and the service API.
+import('./site-animations.js').then(({ initSiteAnimations }) => initSiteAnimations(document, servicesReady)).catch(() => {});
+
 const menu = document.querySelector('#main-nav');
 const menuButton = document.querySelector('.menu-button');
 

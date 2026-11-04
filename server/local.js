@@ -10,6 +10,10 @@ import { reportIncident, securityHeaders } from './security.js';
 import { pwaAssets, pwaHeaders } from './pwa-assets.js';
 
 const assets = new Map([
+  ['/site-animations.js', ['site-animations.js', 'text/javascript; charset=utf-8']],
+  ['/vendor/animejs.js', ['vendor/animejs.js', 'text/javascript; charset=utf-8']],
+  ['/vendor/animejs.LICENSE.txt', ['vendor/animejs.LICENSE.txt', 'text/plain; charset=utf-8']],
+  ['/button-effects.js', ['button-effects.js', 'text/javascript; charset=utf-8']],
   ...pwaAssets,
   ...Object.entries(documentRoutes).map(([path,file])=>[path,[file,'text/html; charset=utf-8']]),
   ['/legal.css', ['legal.css','text/css; charset=utf-8']],

@@ -72,3 +72,9 @@ El servidor Node rechaza destinos HTTP malformados sin terminar el proceso. `/re
 ## Aplicación instalable
 
 El pie de las páginas incluye «Instalar Chedex». El manifiesto abre `/cuenta` en una ventana independiente con el icono de Chedex. El funcionamiento privado requiere Internet; solo se guarda una página genérica sin conexión. No se guardan cuentas, proyectos ni respuestas de API en la caché de la aplicación. Véase [la guía de instalación](docs/app-instalable.md).
+
+## Animaciones de presentación
+
+Anime.js se sirve localmente desde `public/vendor/`, con versión fijada y licencia MIT. `public/site-animations.js` añade entrada escalonada de tarjetas, trazado breve de las ilustraciones y una secuencia de portada. Se ejecutan una vez al entrar en pantalla, respetan movimiento reducido y restauran estilos y trazos al terminar. El contenido permanece visible sin JavaScript o si falla la carga. Los botones conservan sus efectos y navegación propios.
+
+Tras cambiar Anime.js, ejecuta `npm run animations:build`; `npm run animations:check` comprueba el paquete generado y la licencia en CI.
