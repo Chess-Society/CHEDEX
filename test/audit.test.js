@@ -30,7 +30,7 @@ async function fixture(t) {
     method, headers: { cookie: cookies[user], origin, 'Content-Type': 'application/json', 'X-Chedex-Request': '1' },
     ...(body ? { body: JSON.stringify(body) } : {}),
   }));
-  const body = { title: 'Proyecto de prueba', summary: 'Datos ficticios de auditoría', need: 'Apoyo puntual' };
+  const body = { firstName: 'Persona', lastName: 'Prueba', title: 'Proyecto de prueba', summary: 'Datos ficticios de auditoría', need: 'Apoyo puntual' };
   return { db, call, body, now };
 }
 
@@ -62,6 +62,11 @@ test('AUD-01: una petición malformada devuelve 400 y el servidor sigue disponib
   assert.equal(child.exitCode, null);
   assert.doesNotMatch(stderr, /ERR_INVALID_URL/);
   assert.equal((await fetch(`http://127.0.0.1:${port}/healthz`)).status, 200);
+  for (const path of ['/button-effects.js', '/site-animations.js', '/vendor/animejs.js', '/vendor/animejs.LICENSE.txt']) {
+    const asset = await fetch(`http://127.0.0.1:${port}${path}`);
+    assert.equal(asset.status, 200, path);
+    assert.match(asset.headers.get('Content-Type'), path.endsWith('.js') ? /javascript/ : /text\/plain/);
+  }
 });
 
 test('AUD-03: hacer interna una tarea retira también sus títulos del historial compartido', async t => {

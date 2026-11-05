@@ -1,3 +1,5 @@
+import './button-effects.js';
+import { initTeam } from './team-workspace.js';
 import { icon } from './icons.js';
 import { initAdminWorkspace } from './admin-workspace.js';
 import { serviceProfiles, serviceNeeds } from './services-data.js';
@@ -8,7 +10,7 @@ const panel = document.querySelector('#admin-panel');
 const login = document.querySelector('#admin-login');
 const catalog = document.querySelector('#admin-catalog');
 const save = document.querySelector('#admin-save');
-let workspace;
+let workspace, team;
 let services = [], revision = 0, dirty = false, busy = false;
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
@@ -40,12 +42,16 @@ function render() {
 async function load() {
   busy = true; panel.inert = true;
   try {
-  const session = await request('/api/admin/session');
+  const session = await request('/api/account');
+  if (!session.isAdmin && !['editor','designer','collaborator'].includes(session.teamRole)) throw new Error('Tu cuenta no tiene acceso al equipo.');
   document.querySelector('#admin-user').textContent = session.username;
+  if (!session.isAdmin) { location.replace('/cuenta'); return; }
+  document.querySelectorAll('[data-create-project]').forEach(button=>button.hidden=true);
   const data = await request('/api/admin/services');
   services = data.services; revision = data.revision; dirty = false;
   panel.hidden = false; login.hidden = true; save.disabled = true;
   render(); message('');
+  // Production records are retained, but the owner workflow is now intake and timeline only.
   if (!workspace) { workspace = initAdminWorkspace(document.querySelector('#workspace-root')); await workspace.load(); }
   } finally { busy = false; panel.inert = false; }
 }
@@ -93,14 +99,14 @@ document.querySelector('#admin-reload').addEventListener('click', () => {
   load().catch(error => message(error.message, true));
 });
 document.querySelector('#admin-logout').addEventListener('click', async () => {
-  if (busy || ((dirty || workspace?.hasUnsaved()) && !confirm('Tienes cambios sin guardar. ¿Quieres cerrar sesión?'))) return;
-  try { await request('/api/admin/logout', { method: 'POST' }); dirty = false; location.assign('/admin'); }
+  if (busy || ((dirty || workspace?.hasUnsaved() || team?.hasUnsaved()) && !confirm('Tienes cambios sin guardar. ¿Quieres cerrar sesión?'))) return;
+  try { await request('/api/logout', { method: 'POST' }); dirty = false; location.assign('/admin'); }
   catch (error) { message(error.message, true); }
 });
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
 load().catch(error => { login.hidden = false; message(error.message, true); });
 
-const views={overview:['Resumen','Todo en su sitio.','Una vista clara de los proyectos, las personas y el siguiente paso.'],projects:['Proyectos','Cada proyecto, su siguiente paso.','Organiza las tareas y comparte con cada persona lo que necesita saber.'],people:['Personas','Las personas detrás del proyecto.','Sus objetivos, su contexto y una conversación más cercana.'],reviews:['Reseñas','Escuchar también es avanzar.','Revisa las opiniones de experiencias confirmadas antes de publicarlas.'],services:['Servicios','Tú decides qué ofrecer.','Edita el catálogo que aparece en la web. Los cambios se aplican al guardar.']};
+const views={team:['Equipo','Cada persona, su trabajo.','Asigna proyectos, prepara los encargos y revisa las entregas del equipo.'],overview:['Resumen','Todo en su sitio.','Una vista clara de los proyectos, las personas y el siguiente paso.'],projects:['Consultas','Cada consulta, su recorrido.','Confirma la recepción y actualiza las fases. El trabajo se atiende por correo.'],people:['Usuarios','Usuarios y equipo.','Distingue las cuentas registradas de las personas que trabajan contigo.'],reviews:['Reseñas','Escuchar también es avanzar.','Revisa las opiniones de experiencias confirmadas antes de publicarlas.'],services:['Servicios','Tú decides qué ofrecer.','Edita el catálogo que aparece en la web. Los cambios se aplican al guardar.']};
 function showAdminView(view){
  if(!views[view])return;
  document.querySelectorAll('[data-admin-pane]').forEach(pane=>{pane.hidden=pane.dataset.adminPane!==view;});
@@ -112,3 +118,7 @@ function showAdminView(view){
 document.addEventListener('click',event=>{const button=event.target.closest('[data-admin-view]');if(button)showAdminView(button.dataset.adminView);});
 document.addEventListener('admin:navigate',event=>showAdminView(event.detail));
 document.querySelectorAll('[data-icon]').forEach(node=>{node.innerHTML=icon(node.dataset.icon);});
+
+document.addEventListener('team:open',async event=>{showAdminView('team');try{await team?.openProject(event.detail);}catch(error){message(error.message,true);}});
+
+document.addEventListener('team:assign-person',async event=>{showAdminView('team');try{await team?.assignPerson(event.detail);}catch(error){message(error.message,true);}});

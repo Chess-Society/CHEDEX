@@ -2,13 +2,14 @@
 export const sectionRoutes = Object.freeze({
   '/': 'inicio',
   '/apoyo': 'apoyo',
-  '/servicios': 'apoyo',
   '/equipo': 'equipo',
   '/colaboraciones': 'colaboraciones',
   '/contacto': 'contacto',
 });
 export const documentRoutes = Object.freeze({
+  '/servicios': 'services.html',
   '/proyectos': 'projects.html',
+  '/pulse': 'pulse.html',
   '/opiniones': 'reviews.html',
   '/aviso-legal': 'legal-notice.html',
   '/privacidad': 'privacy.html',

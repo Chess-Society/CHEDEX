@@ -63,7 +63,8 @@ test('admin serves its own uncached shell and does not expose the HTML file dire
 test('page links use supported clean URLs and every route has a target', () => {
   const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
   assert.doesNotMatch(html, /href="#/);
-  for (const [, path] of html.matchAll(/href="(\/[^"\s]*)"/g)) {
+  for (const [, href] of html.matchAll(/href="(\/[^"\s]*)"/g)) {
+    const path = new URL(href, "https://chedex.app").pathname;
     if (!/\.[a-z]+$/.test(path)) assert.ok(path === '/admin' || (path === '/cuenta' || Object.hasOwn(documentRoutes,path)) || Object.hasOwn(sectionRoutes, path), path);
   }
   for (const section of Object.values(sectionRoutes)) assert.ok(html.includes(`id="${section}"`), section);
@@ -104,8 +105,45 @@ test('public opinions have a standalone page and workspace modules are served', 
     assert.equal(new URL(request.url).pathname, '/reviews.html'); return new Response('Opiniones');
   } } });
   assert.equal(response.status, 200);
-  for (const path of ['/workspace.css','/workspace-ui.js','/admin-workspace.js','/account.js','/project-data.js','/portal-nav.js','/reviews.js']) {
+  for (const path of ['/site-animations.js','/vendor/animejs.js','/vendor/animejs.LICENSE.txt','/button-effects.js','/interaction-ui.js','/account-home.js','/team-workspace.js','/team-data.js','/workspace.css','/workspace-ui.js','/admin-workspace.js','/account.js','/project-data.js','/portal-nav.js','/reviews.js']) {
     const asset = await worker.fetch(new Request(`https://chedex.app${path}`), { ASSETS: { fetch: () => new Response('asset') } });
     assert.equal(asset.status, 200, path);
   }
+});
+
+test('services has a dedicated page while the landing keeps its service summary',async()=>{
+  const response=await worker.fetch(new Request('https://chedex.app/servicios'),{ASSETS:{fetch:request=>{
+    assert.equal(new URL(request.url).pathname,'/services.html');return new Response('Servicios');
+  }}});
+  assert.equal(response.status,200);
+  assert.equal((await worker.fetch(new Request('https://chedex.app/servicios/'),{})).headers.get('location'),'https://chedex.app/servicios');
+  assert.equal((await worker.fetch(new Request('https://chedex.app/services.html'),{})).status,404);
+  const page=readFileSync(new URL('../public/services.html',import.meta.url),'utf8');
+  const landing=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  assert.ok(landing.includes('id="services-catalog"'));
+  assert.doesNotMatch(page,/href="[^"]*#/);
+  assert.ok(page.includes('data-scroll-to="edicion-video"'));
+  for(const section of ['apoyo-puntual','representacion','acompanamiento','edicion-video','como-empezamos'])assert.ok(page.includes(`id="${section}"`));
+  for(const expected of ['Qué incluye','Representación y eventos','Sin permanencia','Proton Meet','https://www.instagram.com/lachulapa.es','https://www.tiktok.com/@lachulapa.estudio'])assert.ok(page.includes(expected),expected);
+  for(const path of ['/services.css','/la-chulapa.jpg'])assert.equal((await worker.fetch(new Request(`https://chedex.app${path}`),{ASSETS:{fetch:()=>new Response('asset')}})).status,200);
+});
+
+test('Pulse tiene página propia, beta visible y acceso externo explícito sin redirección automática', async () => {
+  const response = await worker.fetch(new Request('https://chedex.app/pulse'), { ASSETS: { fetch: request => {
+    assert.equal(new URL(request.url).pathname, '/pulse.html');
+    return new Response('Pulse beta');
+  } } });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('location'), null);
+  assert.equal((await worker.fetch(new Request('https://chedex.app/pulse/'), {})).headers.get('location'), 'https://chedex.app/pulse');
+  assert.equal((await worker.fetch(new Request('https://chedex.app/pulse.html'), {})).status, 404);
+  const html = readFileSync(new URL('../public/pulse.html', import.meta.url), 'utf8');
+  assert.match(html, /Versión beta/);
+  assert.match(html, /href="https:\/\/chedexpulse\.app\/" target="_blank" rel="noopener noreferrer"/);
+  assert.match(html, /El panel interactivo está en Chedex Pulse/);
+  assert.doesNotMatch(html, /<iframe|http-equiv="refresh"/i);
+  for (const file of ['index.html', 'services.html', 'projects.html', 'account.html']) {
+    assert.match(readFileSync(new URL('../public/' + file, import.meta.url), 'utf8'), /href="\/pulse" class="nav-pulse">Pulse <span>Beta<\/span>/, file);
+  }
+  assert.equal((await worker.fetch(new Request('https://chedex.app/pulse.css'), { ASSETS: { fetch: () => new Response('css') } })).status, 200);
 });

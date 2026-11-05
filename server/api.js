@@ -1,3 +1,4 @@
+import { teamRole } from './team-api.js';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { publicServices, serviceNeeds, serviceProfiles } from '../public/services-data.js';
 import { initializeStore, cleanupExpired } from './store.js';
@@ -141,7 +142,7 @@ export function createApi({ env, getDatabase, fetcher = fetch, clock = Date.now 
         await db('INSERT INTO chedex_v2_users (lichess_id,username,profile,created_at) VALUES (?,?,?,?) ON CONFLICT(lichess_id) DO UPDATE SET username=excluded.username', [account.id, account.username, '{}', clock()]);
         const sessionToken = random();
         await db('INSERT INTO chedex_v2_sessions (token,lichess_id,username,expires) VALUES (?,?,?,?)', [hash(sessionToken), account.id, account.username, clock() + 28800000]);
-        return redirect(account.id === ADMIN_ID && readCookie(request, destinationName) !== 'cuenta' ? '/admin' : '/cuenta', [cookie(sessionName, sessionToken, 28800), cookie(stateName, '', 0), cookie(noticeName, '', 0), cookie(destinationName, '', 0)]);
+        return redirect(['owner','editor','designer','collaborator'].includes(await teamRole(db,account.id)) && readCookie(request, destinationName) !== 'cuenta' ? '/admin' : '/cuenta', [cookie(sessionName, sessionToken, 28800), cookie(stateName, '', 0), cookie(noticeName, '', 0), cookie(destinationName, '', 0)]);
       }
       if (path === '/api/admin/session' && request.method === 'GET') {
         try {

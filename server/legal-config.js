@@ -3,6 +3,6 @@ export const legalIdentity = {
   tradeName: 'TopChess',
   owner: 'Andrés Liñán',
   address: 'Eugenio Salazar 54, Madrid, España',
-  email: 'escuelatopchess@gmail.com',
+  email: 'chedexapp@proton.me',
   taxId: '50361112J',
 };

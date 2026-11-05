@@ -2,11 +2,11 @@
 
 Web corporativa de representación, promoción y desarrollo profesional en ajedrez. Marca Chedex, con «Impulsado por TopChess» en el pie.
 
-El catálogo de `/servicios` presenta tres modalidades abiertas: apoyo puntual, representación y acompañamiento. Los ejemplos de contactos con colegios, difusión y pequeñas colaboraciones se mantienen en el contexto de la web, sin convertirlos en paquetes de entregables cerrados. No ofrece gestión de viajes, producción de campañas ni resultados garantizados. Los precios están ocultos por defecto. El mensaje central es crecer junto a profesores, jugadores y personas del sector. No se publican casos de campaña ficticios.
+El catálogo presenta tres paquetes de Chedex × La Chulapa con IVA incluido: Apoyo puntual (90 €, 30 minutos y 1 vídeo), Representación y eventos (150 € por evento, 1 hora y 3 vídeos) y Acompañamiento (250 €/mes, 2 sesiones de 45 minutos y 5 vídeos). Incluyen 2 revisiones de edición; eventos y acompañamiento incorporan apoyo de TopChess en la difusión en redes sociales. Material aportado por el cliente, sin grabaciones presenciales, desplazamientos, campañas publicitarias ni resultados garantizados. Las gestiones comerciales y los servicios individuales van bajo presupuesto. Desarrollo de proyectos es un cuarto servicio de consultoría con presupuesto personalizado, sin edición de vídeo incluida, presentado en un módulo horizontal bajo los tres paquetes. El mensaje central es crecer junto a profesores, jugadores y personas del sector. No se publican casos de campaña ficticios.
 
 La identidad visual utiliza fondo negro, superficies en gris oscuro, tipografía sans y botones claros con relieve. El símbolo C y «Impulsado por TopChess» se conservan. No se publican miembros, credenciales, testimonios ni resultados ficticios.
 
-Cada servicio preselecciona el motivo de la reunión. Los desplegables de la web y administración comparten un selector accesible de Chedex, con teclado, foco y opciones propias. El formulario recoge formato preferido y disponibilidad opcional, y prepara una solicitud de reunión por correo; no reserva ni confirma una cita. El formulario prepara un correo para `escuelatopchess@gmail.com` mediante la aplicación de correo del visitante. No almacena candidaturas ni confirma envíos. No necesita nuevas claves o servicios. La portada utiliza un tablero en perspectiva 3D con casillas neutras, piezas SVG delineadas en naranja y movimiento suave. Incluye inclinación al mover el puntero, un control de pausa y respeto por la preferencia de reducir movimiento. Se muestra también en móvil y no carga imágenes rasterizadas ni bibliotecas de 3D. El símbolo C se mantiene en SVG/CSS. La tipografía DM Sans se aloja en el propio dominio, con su licencia OFL; las visitas no cargan Google Fonts.
+Cada servicio dirige a la solicitud privada con el motivo preseleccionado. El acceso utiliza Lichess; las propuestas se revisan dentro de Chedex y, tras su aceptación, permiten reservar una videollamada con enlace externo añadido por administración. El canal de ayuda ante problemas de acceso o formulario es `chedexapp@proton.me`, visible y utilizable sin JavaScript. Los desplegables de la web y administración comparten un selector accesible, con teclado, foco y opciones propias. La portada utiliza un tablero en perspectiva 3D con casillas neutras, piezas SVG delineadas en naranja y movimiento suave. Incluye inclinación al mover el puntero, un control de pausa y respeto por la preferencia de reducir movimiento. Se muestra también en móvil y no carga imágenes rasterizadas ni bibliotecas de 3D. El símbolo C se mantiene en SVG/CSS. La tipografía DM Sans se aloja en el propio dominio, con su licencia OFL; las visitas no cargan Google Fonts.
 
 ## Desarrollo
 
@@ -68,3 +68,17 @@ La [auditoría por bloques](docs/auditoria/00-indice.md) mantiene el diagnóstic
 Los listados de proyectos, personas y reseñas se recuperan por páginas de 100 registros y el panel recorre las páginas. El perfil usa una revisión para rechazar guardados sobre una copia antigua. Convertir una tarea compartida en interna retira también sus eventos del historial visible; los eventos antiguos sin identificador de tarea quedan disponibles para administración.
 
 El servidor Node rechaza destinos HTTP malformados sin terminar el proceso. `/readyz` comprueba acceso al almacenamiento; `/healthz` solo comprueba el proceso HTTP. Docker prepara un directorio de datos escribible, que debe montarse en un volumen persistente. Las respuestas comparten cabeceras de seguridad y los errores inesperados generan identificadores de incidente sin registrar datos personales. La limpieza horaria y los registros del Worker están publicados y su configuración se ha verificado. El monitor de disponibilidad se mantiene en `.github/workflows/monitor.yml`; sus fallos se reflejan en GitHub Actions.
+
+## Aplicación instalable
+
+El pie de las páginas incluye «Instalar Chedex». El manifiesto abre `/cuenta` en una ventana independiente con el icono de Chedex. El funcionamiento privado requiere Internet; solo se guarda una página genérica sin conexión. No se guardan cuentas, proyectos ni respuestas de API en la caché de la aplicación. Véase [la guía de instalación](docs/app-instalable.md).
+
+## Animaciones de presentación
+
+Anime.js se sirve localmente desde `public/vendor/`, con versión fijada y licencia MIT. `public/site-animations.js` añade entrada escalonada de tarjetas, trazado breve de las ilustraciones y una secuencia de portada. Se ejecutan una vez al entrar en pantalla, respetan movimiento reducido y restauran estilos y trazos al terminar. El contenido permanece visible sin JavaScript o si falla la carga. Los botones conservan sus efectos y navegación propios.
+
+Tras cambiar Anime.js, ejecuta `npm run animations:build`; `npm run animations:check` comprueba el paquete generado y la licencia en CI.
+
+## Acceso a Chedex Pulse
+
+`/pulse` es una página pública de presentación y acceso al observatorio en `https://chedexpulse.app/`. La navegación y la página identifican la versión como beta. Los enlaces abren Pulse en otra pestaña; no se integra su aplicación, no se copian sus datos y no se modifica el acceso a la cuenta de Chedex.

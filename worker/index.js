@@ -2,11 +2,19 @@ import { canonicalPagePath, documentRoutes } from '../public/routes.js';
 import { createApi } from '../server/api.js';
 import { remoteDatabase, initializeStore, cleanupExpired } from '../server/store.js';
 import { reportIncident, securityHeaders } from '../server/security.js';
+import { pwaAssets, pwaHeaders } from '../server/pwa-assets.js';
 
 const apis = new WeakMap();
 
 async function handleFetch(request, env) {
   const { pathname } = new URL(request.url);
+  if (pwaAssets.has(pathname)) {
+    const asset = await env.ASSETS.fetch(request);
+    const response = new Response(asset.body, asset);
+    response.headers.set('Content-Type', pwaAssets.get(pathname)[1]);
+    for (const [name, value] of Object.entries(pwaHeaders(pathname))) response.headers.set(name, value);
+    return response;
+  }
   if (pathname === '/chedex-icon.svg') return env.ASSETS.fetch(new Request(new URL('/favicon.svg', request.url), request));
   if (pathname.startsWith('/api/') || pathname.startsWith('/auth/')) {
     if (!apis.has(env)) apis.set(env, createApi({
@@ -38,7 +46,7 @@ async function handleFetch(request, env) {
     console.log(JSON.stringify({ event: 'chedex_readiness', status: 'ok' }));
     return Response.json({ status: 'ready' }, { headers: { 'Cache-Control': 'no-store' } });
   }
-  if (!['/legal.css', '/cookie-ui.js', '/legal.js', '/fonts/dm-sans-latin.woff2', '/fonts/dm-sans-latin-ext.woff2', '/fonts/OFL.txt', '/admin-dashboard.css', '/account.css', '/check.svg', '/escacsify-logo.png', '/icons.js', '/workspace.css', '/workspace-ui.js', '/project-data.js', '/admin-workspace.js', '/account.js', '/reviews.js', '/portal-nav.js', '/chessdare-logo.png', '/rexher-cup-logo.png', '/projects.css', '/style.css', '/app.js', '/routes.js', '/services-data.js', '/service-cards.js', '/selects.js', '/chess-scene.js', '/chess-scene.css', '/admin.js', '/admin.css', '/favicon.svg'].includes(pathname)) {
+  if (!['/pulse.css', '/site-animations.js', '/vendor/animejs.js', '/vendor/animejs.LICENSE.txt', '/button-effects.js', '/services.css', '/la-chulapa.jpg', '/legal.css', '/cookie-ui.js', '/legal.js', '/fonts/dm-sans-latin.woff2', '/fonts/dm-sans-latin-ext.woff2', '/fonts/OFL.txt', '/admin-dashboard.css', '/account.css', '/check.svg', '/escacsify-logo.png', '/icons.js', '/workspace.css', '/workspace-ui.js', '/appointments-ui.js', '/project-data.js', '/team-workspace.js', '/team-data.js', '/admin-workspace.js', '/interaction-ui.js', '/account-home.js', '/account.js', '/reviews.js', '/portal-nav.js', '/chessdare-logo.png', '/rexher-cup-logo.png', '/projects.css', '/style.css', '/app.js', '/routes.js', '/services-data.js', '/service-cards.js', '/selects.js', '/chess-scene.js', '/chess-scene.css', '/admin.js', '/admin.css', '/favicon.svg'].includes(pathname)) {
     return new Response('No encontrado', { status: 404 });
   }
   return env.ASSETS.fetch(request);

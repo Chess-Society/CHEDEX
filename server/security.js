@@ -16,7 +16,7 @@ export function securityHeaders({ secure = false, privatePage = false } = {}) {
     'X-Frame-Options': 'DENY',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
     ...(secure ? { 'Strict-Transport-Security': 'max-age=31536000' } : {}),
-    'Content-Security-Policy': `default-src 'self'; script-src 'self'; style-src 'self'${privatePage ? '' : " 'unsafe-inline'"}; font-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'`,
+    'Content-Security-Policy': `default-src 'self'; script-src 'self'; worker-src 'self'; manifest-src 'self'; style-src 'self'${privatePage ? '' : " 'unsafe-inline'"}; font-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'`,
     ...(privatePage ? { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } : {}),
   };
 }

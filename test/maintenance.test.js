@@ -38,19 +38,24 @@ test('AUD-07: exportación privada, copia restaurable y supresión transaccional
     const content = { title: owner, summary: '', tasks: [], history: [], updates: [{ internal: true, text: 'PRIVATE_NOTE' }, { internal: false, text: 'SHARED_MESSAGE' }] };
     db.prepare('INSERT INTO chedex_v2_projects VALUES (?,?,1,?,1)').run(owner, owner, JSON.stringify(content));
     db.prepare('INSERT INTO chedex_v2_reviews VALUES (?,?,?,5,?,?,1)').run(owner, owner, owner, 'Review', 'approved');
+    db.prepare('INSERT INTO chedex_v2_slots (id,starts,ends) VALUES (?,1000,2000)').run(owner);
+    db.prepare("INSERT INTO chedex_v2_appointments (id,slot_id,project_id,owner_id,email,status,created_at) VALUES (?,?,?,?,?,'booked',1)").run(owner,owner,owner,owner,`${owner}@example.com`);
   }
+  db.prepare("INSERT INTO chedex_v2_team (lichess_id,role,revision) VALUES ('alice','editor',1)").run();
   db.close();
   await maintainData({ database, action: 'export-user', user: 'alice', output });
   const exported = readFileSync(output, 'utf8');
   assert.match(exported, /SHARED_MESSAGE/);
+  assert.match(exported, /alice@example.com/);
   assert.doesNotMatch(exported, /PRIVATE_NOTE|TOKEN_|bob/);
   await assert.rejects(maintainData({ database, action: 'export-user', user: 'alice', output }));
   await assert.rejects(maintainData({ database, action: 'delete-user', user: 'alice', confirm: 'bob', backup }));
   await maintainData({ database, action: 'delete-user', user: 'alice', confirm: 'alice', backup });
   const remaining = new DatabaseSync(database, { readOnly: true });
   try {
-    for (const table of ['users', 'sessions', 'projects', 'reviews', 'limits']) assert.equal(remaining.prepare(`SELECT COUNT(*) AS n FROM chedex_v2_${table}`).get().n, 1);
+    for (const table of ['users', 'sessions', 'projects', 'reviews', 'limits', 'appointments']) assert.equal(remaining.prepare(`SELECT COUNT(*) AS n FROM chedex_v2_${table}`).get().n, 1);
     assert.equal(remaining.prepare('SELECT value FROM previous_app').get().value, 'KEEP');
+    assert.equal(remaining.prepare("SELECT role FROM chedex_v2_team WHERE lichess_id='alice'").get().role, 'disabled');
   } finally { remaining.close(); }
   // Restoring to an isolated SQLite connection preserves pre-deletion records.
   const restored = new DatabaseSync(backup, { readOnly: true });
