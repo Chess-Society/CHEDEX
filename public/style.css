@@ -447,3 +447,19 @@ nav a[aria-current="location"] { color: var(--ink); }
 
 /* Authentication links keep a fixed click target. */
 .button[href^="/auth/"] { transform:none !important; }
+
+/* Pulse is a separate beta entry; keep the header usable at intermediate widths. */
+#main-nav .nav-pulse { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+#main-nav .nav-pulse>span { display:inline-flex; color:#ffc397; border:1px solid #f18b4255; background:#f18b4210; border-radius:4px; padding:3px 5px; font:9px ui-monospace,monospace; line-height:1; text-transform:uppercase; }
+@media(max-width:900px) {
+ .site-header #main-nav { display:none; position:absolute; top:100%; left:0; right:0; margin:0; padding:20px 22px; background:#191b1f; border-bottom:1px solid var(--line); box-shadow:0 15px 30px #0006; }
+ .site-header #main-nav.open { display:flex; flex-direction:column; align-items:stretch; gap:0; }
+ .site-header #main-nav>a { font-size:17px; padding:15px 0; border-bottom:1px solid #363942; }
+ .site-header #main-nav .nav-account { margin:12px 0 0; padding:17px 0 3px; border:0; font-size:14px; }
+ .site-header #main-nav .nav-account[aria-current]::after { left:0; }
+ .site-header .header-contact { margin-left:auto; }
+ .site-header .menu-button { display:grid; place-content:center; gap:6px; width:28px; height:40px; border:0; background:transparent; padding:0; flex-shrink:0; }
+ .site-header .menu-button>span { display:block; width:21px; height:1px; background:#e8e9ef; transition:transform .2s; }
+ .site-header .menu-button[aria-expanded="true"]>span:first-child { transform:translateY(3.5px) rotate(45deg); }
+ .site-header .menu-button[aria-expanded="true"]>span:last-child { transform:translateY(-3.5px) rotate(-45deg); }
+}

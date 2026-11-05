@@ -78,3 +78,7 @@ El pie de las páginas incluye «Instalar Chedex». El manifiesto abre `/cuenta`
 Anime.js se sirve localmente desde `public/vendor/`, con versión fijada y licencia MIT. `public/site-animations.js` añade entrada escalonada de tarjetas, trazado breve de las ilustraciones y una secuencia de portada. Se ejecutan una vez al entrar en pantalla, respetan movimiento reducido y restauran estilos y trazos al terminar. El contenido permanece visible sin JavaScript o si falla la carga. Los botones conservan sus efectos y navegación propios.
 
 Tras cambiar Anime.js, ejecuta `npm run animations:build`; `npm run animations:check` comprueba el paquete generado y la licencia en CI.
+
+## Acceso a Chedex Pulse
+
+`/pulse` es una página pública de presentación y acceso al observatorio en `https://chedexpulse.app/`. La navegación y la página identifican la versión como beta. Los enlaces abren Pulse en otra pestaña; no se integra su aplicación, no se copian sus datos y no se modifica el acceso a la cuenta de Chedex.

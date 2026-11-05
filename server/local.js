@@ -10,6 +10,7 @@ import { reportIncident, securityHeaders } from './security.js';
 import { pwaAssets, pwaHeaders } from './pwa-assets.js';
 
 const assets = new Map([
+  ['/pulse.css', ['pulse.css', 'text/css; charset=utf-8']],
   ['/site-animations.js', ['site-animations.js', 'text/javascript; charset=utf-8']],
   ['/vendor/animejs.js', ['vendor/animejs.js', 'text/javascript; charset=utf-8']],
   ['/vendor/animejs.LICENSE.txt', ['vendor/animejs.LICENSE.txt', 'text/plain; charset=utf-8']],

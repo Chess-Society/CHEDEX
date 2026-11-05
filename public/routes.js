@@ -9,6 +9,7 @@ export const sectionRoutes = Object.freeze({
 export const documentRoutes = Object.freeze({
   '/servicios': 'services.html',
   '/proyectos': 'projects.html',
+  '/pulse': 'pulse.html',
   '/opiniones': 'reviews.html',
   '/aviso-legal': 'legal-notice.html',
   '/privacidad': 'privacy.html',

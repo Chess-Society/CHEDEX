@@ -127,3 +127,23 @@ test('services has a dedicated page while the landing keeps its service summary'
   for(const expected of ['Qué incluye','Representación y eventos','Sin permanencia','Proton Meet','https://www.instagram.com/lachulapa.es','https://www.tiktok.com/@lachulapa.estudio'])assert.ok(page.includes(expected),expected);
   for(const path of ['/services.css','/la-chulapa.jpg'])assert.equal((await worker.fetch(new Request(`https://chedex.app${path}`),{ASSETS:{fetch:()=>new Response('asset')}})).status,200);
 });
+
+test('Pulse tiene página propia, beta visible y acceso externo explícito sin redirección automática', async () => {
+  const response = await worker.fetch(new Request('https://chedex.app/pulse'), { ASSETS: { fetch: request => {
+    assert.equal(new URL(request.url).pathname, '/pulse.html');
+    return new Response('Pulse beta');
+  } } });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('location'), null);
+  assert.equal((await worker.fetch(new Request('https://chedex.app/pulse/'), {})).headers.get('location'), 'https://chedex.app/pulse');
+  assert.equal((await worker.fetch(new Request('https://chedex.app/pulse.html'), {})).status, 404);
+  const html = readFileSync(new URL('../public/pulse.html', import.meta.url), 'utf8');
+  assert.match(html, /Versión beta/);
+  assert.match(html, /href="https:\/\/chedexpulse\.app\/" target="_blank" rel="noopener noreferrer"/);
+  assert.match(html, /El panel interactivo está en Chedex Pulse/);
+  assert.doesNotMatch(html, /<iframe|http-equiv="refresh"/i);
+  for (const file of ['index.html', 'services.html', 'projects.html', 'account.html']) {
+    assert.match(readFileSync(new URL('../public/' + file, import.meta.url), 'utf8'), /href="\/pulse" class="nav-pulse">Pulse <span>Beta<\/span>/, file);
+  }
+  assert.equal((await worker.fetch(new Request('https://chedex.app/pulse.css'), { ASSETS: { fetch: () => new Response('css') } })).status, 200);
+});
