@@ -196,3 +196,10 @@
 .account-next-phase p { max-width:640px; color:#c3cadb; font-size:14px; line-height:1.7; }
 .account-next-phase ul { display:flex; flex-wrap:wrap; gap:8px; list-style:none; margin:16px 0 0; padding:0; }
 .account-next-phase li { border:1px solid #3a3f4b; border-radius:999px; padding:6px 13px; font-size:12px; color:#d7deec; }
+
+/* Recorrido de seis pasos en el inicio y en las tarjetas de consultas. */
+.account-progress { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:5px; list-style:none; margin:16px 0 6px; padding:0; }
+.account-progress li { height:7px; border-radius:4px; background:#2b2f39; }
+.account-progress li.done { background:#c9702a; }
+.account-progress li.current { background:#f18b42; box-shadow:0 0 0 3px #f18b4226; }
+.account-progress-label { margin:0 0 10px; color:#aab4c6; font-size:12px; }

@@ -18,6 +18,7 @@ const assets = new Map([
   ['/dash.css', ['dash.css', 'text/css; charset=utf-8']],
   ['/dash-data.js', ['dash-data.js', 'text/javascript; charset=utf-8']],
   ['/dash-today.js', ['dash-today.js', 'text/javascript; charset=utf-8']],
+  ['/dash-projects.js', ['dash-projects.js', 'text/javascript; charset=utf-8']],
   ...pwaAssets,
   ...Object.entries(documentRoutes).map(([path,file])=>[path,[file,'text/html; charset=utf-8']]),
   ['/legal.css', ['legal.css','text/css; charset=utf-8']],

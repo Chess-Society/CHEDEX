@@ -18,7 +18,7 @@ function queueCard(projects, now) {
   return card('Necesitan tu respuesta', queue.length, queue.length ? `<ul class="today-list">${items}</ul>${more}` : empty('Estás al día.', 'No hay solicitudes por revisar ni mensajes esperando respuesta.'), ' today-card--priority');
 }
 
-function callsCard(projects, slots, now) {
+export function callsCard(projects, slots, now) {
   const start = new Date(now); start.setHours(0, 0, 0, 0);
   const byId = new Map(projects.map(project => [project.id, project]));
   const booked = slots.filter(slot => slot.projectId && slot.ends >= start.getTime() && slot.enabled !== 0).sort((a, b) => a.starts - b.starts);
@@ -62,6 +62,10 @@ export function todayHtml({ projects, slots, pendingReviews, period, proposed, n
 }
 
 // The page policy forbids inline style attributes, so bar widths are applied through the CSS object model.
+export function callsPaneHtml({ projects, slots, now }) {
+  return `<div class="calls-soon"><span class="calls-soon-tag">Próximamente</span><h2>Agenda de llamadas</h2><p>Muy pronto podrás ofrecer horarios y ver aquí las llamadas reservadas. Mientras tanto, las llamadas de 15 minutos se acuerdan por correo.</p></div>${callsCard(projects, slots, now)}`;
+}
+
 export function renderToday(container, state) {
   container.innerHTML = todayHtml({ ...state, now: state.now ?? Date.now() });
   container.querySelectorAll('[data-width]').forEach(bar => { bar.style.width = `${bar.dataset.width}%`; });

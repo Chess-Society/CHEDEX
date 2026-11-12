@@ -42,3 +42,11 @@ export function phase2Offer(projects) {
   if (!done.length || active.some(project => phaseOfNeed(project.need) === 'marca-personal')) return null;
   return done[0];
 }
+
+// Six visible steps of a consulta; «Por confirmar» has not started and «No seguimos» is closed.
+export const journey = ['Recibida', 'Llamada de 15 min', 'Valoración', 'Propuesta acordada', 'En marcha', 'Completado'];
+export function progressSteps(project) {
+  const phase = progressPhase(project);
+  const at = journey.indexOf(phase);
+  return journey.map((label, index) => ({ label, state: at < 0 ? 'todo' : index < at || phase === 'Completado' ? 'done' : index === at ? 'current' : 'todo' }));
+}

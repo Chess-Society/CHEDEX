@@ -106,13 +106,16 @@ document.querySelector('#admin-logout').addEventListener('click', async () => {
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
 load().catch(error => { login.hidden = false; message(error.message, true); });
 
-const views={team:['Equipo','Cada persona, su trabajo.','Asigna proyectos, prepara los encargos y revisa las entregas del equipo.'],overview:['Hoy','Lo que necesita tu atención.','Respuestas pendientes, llamadas y el estado de tus consultas.'],projects:['Consultas','Cada consulta, su recorrido.','Confirma la recepción y actualiza las fases. El trabajo se atiende por correo.'],people:['Clientes y equipo','Clientes y equipo.','Distingue las cuentas registradas de las personas que trabajan contigo.'],reviews:['Reseñas','Escuchar también es avanzar.','Revisa las opiniones de experiencias confirmadas antes de publicarlas.'],services:['Servicios','Tú decides qué ofrecer.','Edita el catálogo que aparece en la web. Los cambios se aplican al guardar.']};
+const views={team:['Equipo','Cada persona, su trabajo.','Asigna proyectos, prepara los encargos y revisa las entregas del equipo.'],overview:['Hoy','Lo que necesita tu atención.','Respuestas pendientes, llamadas y el estado de tus consultas.'],projects:['Consultas','Cada consulta, su recorrido.','Confirma la recepción y actualiza las fases. El trabajo se atiende por correo.'],calls:['Llamadas','Tus llamadas de 15 minutos.','Próximamente: agenda de horarios y reservas desde aquí.'],clients:['Clientes','Las personas que te escriben.','Cuentas registradas y sus consultas. Registrarse no convierte a nadie en colaborador.'],crew:['Equipo','Quién trabaja contigo.','Roles, accesos y asignación de proyectos.'],people:['Equipo','Quién trabaja contigo.','Distingue las cuentas registradas de las personas que trabajan contigo.'],reviews:['Reseñas','Escuchar también es avanzar.','Revisa las opiniones de experiencias confirmadas antes de publicarlas.'],services:['Servicios','Tú decides qué ofrecer.','Edita el catálogo que aparece en la web. Los cambios se aplican al guardar.']};
+const paneOf=view=>({clients:'people',crew:'people'})[view]||view;
 function showAdminView(view){
+ if(view==='people')view='crew';
  if(!views[view])return;
- document.querySelectorAll('[data-admin-pane]').forEach(pane=>{pane.hidden=pane.dataset.adminPane!==view;});
+ document.querySelectorAll('[data-admin-pane]').forEach(pane=>{pane.hidden=pane.dataset.adminPane!==paneOf(view);});
  document.querySelectorAll('.dashboard-navigation [data-admin-view]').forEach(tab=>tab.setAttribute('aria-pressed',String(tab.dataset.adminView===view)));
  document.querySelector('#admin-section-label').textContent=views[view][0];document.querySelector('#panel-title').textContent=views[view][1];document.querySelector('#admin-section-description').textContent=views[view][2];
  document.querySelector('#workspace-status').hidden=view==='services';
+ if(paneOf(view)==='people')document.dispatchEvent(new CustomEvent('admin:people-mode',{detail:view==='crew'?'crew':'clients'}));
  document.querySelector('.dashboard-main').scrollIntoView({block:'start',behavior:'instant'});
 }
 document.addEventListener('click',event=>{const button=event.target.closest('[data-admin-view]');if(button)showAdminView(button.dataset.adminView);});

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {accountStep,homeProject,nextStep,phase2Offer} from '../public/account-home.js';
+import {accountStep,homeProject,nextStep,phase2Offer,progressSteps,journey} from '../public/account-home.js';
 import {requestEmail,progressPhase,needs} from '../public/project-data.js';
 import {timeline} from '../public/workspace-ui.js';
 const base={id:'demo',requestStatus:'Aceptada',stage:'Por hablar',updatedAt:1};
@@ -36,4 +36,14 @@ test('phase2Offer propone la fase 2 solo tras completar una consultoría y si no
   assert.equal(phase2Offer([{...done,archived:true}]),null);
   assert.equal(phase2Offer([{...done,need:'Apoyo puntual'}]),null,'las modalidades de La Chulapa no generan la oferta');
   assert.equal(phase2Offer([done,{...base,id:'b',need:'Apoyo puntual'}]),null,'ya pidió la fase 2');
+});
+
+test('progressSteps marca hechos, paso actual y pendientes según la fase',()=>{
+  const states=project=>progressSteps(project).map(step=>step.state[0]).join('');
+  assert.equal(journey.length,6);
+  assert.equal(states({...base,progressPhase:'Valoración'}),'ddcttt');
+  assert.equal(states({...base,progressPhase:'Recibida'}),'cttttt');
+  assert.equal(states({...base,progressPhase:'Completado'}),'dddddd');
+  assert.equal(states({...base,progressPhase:'Por confirmar'}),'tttttt');
+  assert.equal(states({...base,progressPhase:'No seguimos'}),'tttttt');
 });

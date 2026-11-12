@@ -52,3 +52,25 @@
 .projects-filter button:hover { color:var(--ink); }
 .projects-filter button[aria-pressed=true] { background:#f18b4220; color:#ffb47d; box-shadow:inset 0 0 0 1px #f18b4255; }
 .projects-filter button:focus-visible { outline:2px solid #f18b42; outline-offset:2px; }
+
+/* Llamadas: sección anunciada como próxima. */
+.calls-soon { border:1px dashed #f18b4266; border-radius:20px; padding:24px; background:#f18b4208; margin-bottom:18px; }
+.calls-soon h2 { margin:12px 0 8px; font-size:20px; }
+.calls-soon p { margin:0; max-width:620px; color:#c3cadb; font-size:13px; line-height:1.7; }
+.calls-soon-tag { display:inline-block; padding:5px 11px; border-radius:6px; background:#f18b42; color:#1b1006; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+.dashboard-navigation .dashboard-soon { min-width:0; padding:0 8px; font-size:9px; letter-spacing:.04em; text-transform:uppercase; background:#f18b4220; color:#ffb47d; }
+
+/* Lista de consultas con estado y avisos. */
+.consulta-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.consulta-alert { background:#f18b4224; color:#ffb47d; border-color:#f18b4255; }
+
+/* Escritorio: la consulta se abre en un cajón lateral sin salir de la lista. */
+@media (min-width:981px) {
+  .dashboard-main .work-layout { grid-template-columns:minmax(0,1fr); gap:18px; }
+  .dashboard-main .work-layout>#admin-projects-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px; align-content:start; }
+  .dashboard-main .work-layout>#admin-projects-list { max-height:none; overflow:visible; }
+  .dashboard-main .work-layout>#admin-projects-list .project-list-item { margin-bottom:0; }
+  .dashboard-main .work-layout:not(.has-selection)>#admin-project-detail { display:none; }
+  .dashboard-main .work-layout.has-selection::before { content:''; position:fixed; inset:0; z-index:60; background:#000b; cursor:pointer; }
+  .dashboard-main .work-layout.has-selection>#admin-project-detail { position:fixed; top:0; right:0; bottom:0; z-index:61; width:min(820px,94vw); overflow-y:auto; padding:26px 28px 40px; background:#13151a; border-left:1px solid #3a3f4b; box-shadow:-30px 0 70px #000c; outline:0; }
+}
