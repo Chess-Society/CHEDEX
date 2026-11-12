@@ -52,3 +52,16 @@ test('los precios separan el importe de las condiciones y escapan el contenido e
   assert.ok(container.innerHTML.includes('&lt;script&gt;'));
   assert.ok(container.innerHTML.includes('&lt;img onerror=&quot;x&quot;&gt;'));
 });
+
+test('el catálogo se agrupa en dos fases y omite la fase vacía',()=>{
+  const container={innerHTML:''};
+  renderServices(container,defaultServices);
+  assert.match(container.innerHTML,/Fase 1<\/span>/);
+  assert.match(container.innerHTML,/Fase 2<\/span>/);
+  assert.equal((container.innerHTML.match(/<article class="bundle-card/g)||[]).length,defaultServices.length);
+  assert.ok(container.innerHTML.indexOf('Consultoría Chedex')<container.innerHTML.indexOf('Marca personal con La Chulapa'));
+  assert.equal((container.innerHTML.match(/ featured"/g)||[]).length,1);
+  renderServices(container,defaultServices.filter(service=>service.phase==='marca-personal'));
+  assert.doesNotMatch(container.innerHTML,/Fase 1/);
+  assert.match(container.innerHTML,/Fase 2/);
+});

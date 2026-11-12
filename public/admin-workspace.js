@@ -5,10 +5,12 @@ import { icon } from './icons.js';
 import { api, allPages, send, esc, needs, stages, select, area, field, projectList, board, updates, history, badge, date, timeline } from './workspace-ui.js';
 import { enhanceSelects } from './selects.js';
 import { decisionCard, appointmentCard, availabilityCard } from './appointments-ui.js';
+import { renderToday, phase2Message } from './dash-today.js';
+import { replyQueue, phase2Candidates, phase2Proposed, phaseOfNeed } from './dash-data.js';
 
 export function initAdminWorkspace(root) {
   let peopleFilter='all', members=[];
-  let projects=[], users=[], reviews=[], slots=[], appointment=null, current=null, busy=false, dirty=false, dirtyForm=null, dragId=null, reviewFilter='pending', projectTab='settings';
+  let todayPeriod='7d', phaseFilter='all', projects=[], users=[], reviews=[], slots=[], appointment=null, current=null, busy=false, dirty=false, dirtyForm=null, dragId=null, reviewFilter='pending', projectTab='settings';
   const status=root.querySelector('#workspace-status'), list=root.querySelector('#admin-projects-list'), detail=root.querySelector('#admin-project-detail');
   const dialog=root.querySelector('#task-dialog'), createDialog=root.querySelector('#new-admin-project');
   const message=feedback(status);
@@ -25,24 +27,29 @@ export function initAdminWorkspace(root) {
     const data=await Promise.all([allPages('/api/admin/projects','projects'),allPages('/api/admin/users','users'),allPages('/api/admin/reviews','reviews'),api('/api/admin/slots'),api('/api/admin/team')]);
     projects=data[0];users=data[1];reviews=data[2];slots=data[3].slots;members=data[4].members;
     if(id&&projects.some(p=>p.id===id)){const data=await api(`/api/admin/projects/${id}`);current=data.project;appointment=data.appointment;}else{current=null;appointment=null;}
-    renderAvailability();renderList();renderDetail();renderPeople();renderReviews();renderCreate();dirty=false;dirtyForm=null;
+    await loadProposed();renderAvailability();renderList();renderDetail();renderPeople();renderReviews();renderCreate();dirty=false;dirtyForm=null;
     renderCounts();
   }
   function renderCounts(){
-    root.querySelector('#work-total').textContent=String(projects.filter(p=>!p.archived).length);
-    root.querySelector('#work-waiting').textContent=String(projects.filter(p=>!p.archived&&p.requestStatus==='Pendiente de revisión').length);
-    root.querySelector('#work-review-count').textContent=String(reviews.filter(r=>r.status==='pending').length);
-    root.closest('#admin-panel').querySelector('[data-nav-count=projects]').textContent=String(projects.filter(p=>!p.archived).length);root.closest('#admin-panel').querySelector('[data-nav-count=reviews]').textContent=String(reviews.filter(r=>r.status==='pending').length);renderDashboard();
+    const set=(name,value)=>{const node=root.closest('#admin-panel').querySelector(`[data-nav-count=${name}]`);if(node)node.textContent=String(value);};
+    set('projects',projects.filter(p=>!p.archived).length);
+    set('reviews',reviews.filter(r=>r.status==='pending').length);
+    set('today',replyQueue(projects,Date.now()).length);
+    renderDashboard();
   }
-  function renderList(){const archived=root.querySelector('#show-archived').checked,q=root.querySelector('#admin-project-search').value.trim().toLocaleLowerCase('es');const visible=projects.filter(p=>(archived||!p.archived)&&`${p.title} ${p.username||''} ${p.stage} ${p.requestStatus}`.toLocaleLowerCase('es').includes(q));list.innerHTML=visible.length?projectList(visible,current?.id):'<p class="work-empty">'+(q?'No hay proyectos que coincidan con tu búsqueda.':'Todavía no hay proyectos. Puedes crear uno o esperar una nueva solicitud.')+'</p>';}
+  function renderList(){const archived=root.querySelector('#show-archived').checked,q=root.querySelector('#admin-project-search').value.trim().toLocaleLowerCase('es');const visible=projects.filter(p=>(archived||!p.archived)&&(phaseFilter==='all'||phaseOfNeed(p.need)===phaseFilter)&&`${p.title} ${p.username||''} ${p.stage} ${p.requestStatus}`.toLocaleLowerCase('es').includes(q));list.innerHTML=visible.length?projectList(visible,current?.id):'<p class="work-empty">'+(q?'No hay proyectos que coincidan con tu búsqueda.':'Todavía no hay proyectos. Puedes crear uno o esperar una nueva solicitud.')+'</p>';}
   function renderCreate(){
     root.querySelector('#admin-create-project').innerHTML=`<label>Usuario de Lichess<select name="ownerId" required><option value="">Selecciona una persona</option>${users.map(user=>`<option value="${esc(user.id)}">${esc(user.username)}</option>`).join('')}</select></label><div class="work-fields">${field('Nombre de la persona','firstName','',80)}${field('Apellidos (si es posible)','lastName','',120,false)}</div>${field('Nombre del proyecto','title','',100)}${select('Modalidad','need',needs,needs[0])}${area('Objetivo y alcance compartido','summary')}<p class="work-help">La persona debe haber entrado antes en Chedex con Lichess. El proyecto será visible para ella desde su creación.</p><button class="button">Crear proyecto ${icon('external')}</button>`;enhanceSelects(root.querySelector('#admin-create-project'));
   }
+  const proposedCache=new Map();
+  async function loadProposed(){
+    for(const project of phase2Candidates(projects,new Set())){
+      const cached=proposedCache.get(project.id);if(cached&&cached.updatedAt===project.updatedAt)continue;
+      try{const data=await api(`/api/admin/projects/${project.id}`);proposedCache.set(project.id,{updatedAt:project.updatedAt,proposed:phase2Proposed(data.project)});}catch{proposedCache.set(project.id,{updatedAt:project.updatedAt,proposed:false});}
+    }
+  }
   function renderDashboard(){
-    const recent=[...projects].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,5);
-    root.querySelector('#dashboard-recent').innerHTML=recent.length?recent.map(project=>`<button class="dashboard-recent-project" data-project="${esc(project.id)}"><span class="dashboard-recent-icon">${icon('folder')}</span><span><strong>${esc(project.title)}</strong><small>${esc(project.username||project.ownerId)} · ${date(project.updatedAt)}</small></span>${badge(project.archived?'Archivado':project.stage)}${icon('external')}</button>`).join(''):`<div class="dashboard-empty"><span class="dashboard-empty-symbol">${icon('folder')}</span><h3>Todo preparado para el próximo proyecto.</h3><p>Las solicitudes y los proyectos que crees aparecerán aquí, con sus avances y su persona de contacto.</p><button class="dashboard-text-button" data-create-project>Crear el primer proyecto ${icon('plus')}</button></div>`;
-    const waiting=projects.filter(p=>!p.archived&&p.requestStatus==='Pendiente de revisión').length,pending=reviews.filter(r=>r.status==='pending').length;
-    root.querySelector('#dashboard-attention').innerHTML=`<p>${waiting?`Tienes <strong>${waiting} ${waiting===1?'proyecto pendiente':'proyectos pendientes'} de revisión</strong>.`:'No hay solicitudes pendientes de revisión.'}</p><p>${pending?`Hay <strong>${pending} ${pending===1?'opinión':'opiniones'}</strong> esperando revisión.`:'Las nuevas opiniones aparecerán aquí cuando haya experiencias que revisar.'}</p>`;
+    renderToday(root.querySelector('#today-root'),{projects,slots,pendingReviews:reviews.filter(r=>r.status==='pending').length,period:todayPeriod,proposed:new Set([...proposedCache].filter(([,value])=>value.proposed).map(([id])=>id))});
   }
   function showProjectTab(tab){projectTab=tab;detail.querySelectorAll('[data-project-pane]').forEach(pane=>{pane.hidden=pane.dataset.projectPane!==tab;});detail.querySelectorAll('[data-project-tab]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.projectTab===tab)));}
   function renderDetail(){
@@ -80,6 +87,9 @@ export function initAdminWorkspace(root) {
     if(event.target.closest('[data-archive-admin]')&&canLeave()&&confirm(current.archived?'¿Restaurar el proyecto?':'¿Archivar el proyecto? Se conserva el historial y puede restaurarse.'))run(async()=>{const archived=!current.archived;await send(`/api/admin/projects/${current.id}`,{action:'archive',archived,revision:current.revision},'PUT');current=null;await refresh(null);message(archived?'Proyecto archivado. Activa Mostrar archivados para restaurarlo.':'Proyecto restaurado.');});
     const tab=event.target.closest('[data-project-tab]');if(tab)showProjectTab(tab.dataset.projectTab);const reviewTab=event.target.closest('[data-review-filter]');if(reviewTab){reviewFilter=reviewTab.dataset.reviewFilter;renderReviews();}
     if(event.target.closest('[data-production]')&&canLeave())document.dispatchEvent(new CustomEvent('team:open',{detail:current.id}));
+    const phaseButton=event.target.closest('[data-phase-filter]');if(phaseButton){phaseFilter=phaseButton.dataset.phaseFilter;root.querySelectorAll('[data-phase-filter]').forEach(item=>item.setAttribute('aria-pressed',String(item===phaseButton)));renderList();return;}
+    const period=event.target.closest('[data-period]');if(period){todayPeriod=period.dataset.period;renderDashboard();return;}
+    const propose=event.target.closest('[data-propose-phase2]');if(propose){const id=propose.dataset.proposePhase2,saved=projects.find(item=>item.id===id);if(saved&&confirm(`¿Enviar a ${saved.username||'esta persona'} la propuesta de la fase 2? Se publica como mensaje compartido en su consulta.`))run(async()=>{const data=await api(`/api/admin/projects/${id}`);await send(`/api/admin/projects/${id}`,{revision:data.project.revision,action:'update',internal:false,text:phase2Message},'PUT');proposedCache.delete(id);await refresh();message('Propuesta de la fase 2 enviada. La persona la verá en su espacio.');});return;}
     const project=event.target.closest('[data-project]');if(project&&canLeave())run(async()=>{projectTab='settings';document.dispatchEvent(new CustomEvent('admin:navigate',{detail:'projects'}));const data=await api(`/api/admin/projects/${project.dataset.project}`);current=data.project;appointment=data.appointment;renderList();renderDetail();renderCounts();dirty=false;dirtyForm=null;message('Solicitud cargada.');detail.scrollIntoView({block:'start',behavior:'instant'});});
     const slot=event.target.closest('[data-toggle-slot]');if(slot&&canLeave())run(async()=>{const value=slots.find(item=>item.id===slot.dataset.toggleSlot);await send(`/api/admin/slots/${value.id}`,{enabled:!value.enabled,revision:value.revision},'PUT');await refresh();message('Disponibilidad actualizada.');});
     if(event.target.closest('[data-add-task]')&&canLeave()){if(dirty){renderDetail();dirty=false;dirtyForm=null;}openTask();}

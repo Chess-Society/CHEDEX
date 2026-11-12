@@ -1,4 +1,4 @@
-import { defaultServices } from '../public/services-data.js';
+import { defaultServices, migrateCatalog } from '../public/services-data.js';
 
 export async function cleanupExpired(db, now = Date.now()) {
   for (const table of ['oauth', 'sessions', 'limits']) {
@@ -32,6 +32,9 @@ export async function initializeStore(db) {
   // A trigger keeps project deletion and related rows in the same SQLite transaction.
   await db('CREATE TRIGGER IF NOT EXISTS chedex_v2_project_cleanup AFTER DELETE ON chedex_v2_projects BEGIN DELETE FROM chedex_v2_reviews WHERE project_id=OLD.id; DELETE FROM chedex_v2_appointments WHERE project_id=OLD.id; END');
   await db('INSERT OR IGNORE INTO chedex_v2_catalog (id,revision,content) VALUES (1,1,?)', [JSON.stringify(defaultServices)]);
+  const catalog = (await db('SELECT content FROM chedex_v2_catalog WHERE id=1'))[0];
+  const migrated = catalog ? migrateCatalog(JSON.parse(catalog.content)) : { changed: false };
+  if (migrated.changed) await db('UPDATE chedex_v2_catalog SET content=?,revision=revision+1 WHERE id=1 AND content=?', [JSON.stringify(migrated.services), catalog.content]);
   await db("INSERT OR IGNORE INTO chedex_v2_team (lichess_id,role,revision) VALUES ('lachulapa_es','editor',1)");
   return db;
 }

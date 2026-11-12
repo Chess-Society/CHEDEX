@@ -1,0 +1,54 @@
+/* «Hoy»: cola de trabajo del panel de administración. Usa la identidad de Chedex (oscuro, naranja, relieve). */
+.today-root { display:grid; gap:18px; }
+.today-bar-top { display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between; }
+.today-periods { display:inline-flex; gap:6px; padding:5px; border:1px solid #333842; border-radius:999px; background:#15171c; }
+.today-periods button { border:0; background:none; color:#aeb9cc; padding:9px 16px; border-radius:999px; font:inherit; font-size:12px; font-weight:600; cursor:pointer; transition:background .15s,color .15s; }
+.today-periods button:hover { color:var(--ink); }
+.today-periods button[aria-pressed=true] { background:#f18b42; color:#1b1006; box-shadow:0 3px 0 #9a4f1a; }
+.today-alert { display:inline-flex; gap:8px; align-items:center; border:1px solid #f18b4255; background:#f18b4212; color:#ffcfaa; border-radius:12px; padding:10px 14px; font:inherit; font-size:12px; cursor:pointer; }
+.today-alert strong { color:#ffb47d; font-size:15px; }
+.today-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; align-items:start; }
+.today-card { border:1px solid #333842; border-top:2px solid #444852; border-radius:20px; padding:22px; background:linear-gradient(160deg,#1c1e25,#15171c); box-shadow:0 7px 0 #07080a; min-width:0; }
+.today-card--priority { border-top-color:#f18b42; }
+.today-card--wide { grid-column:1 / -1; }
+.today-card>header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.today-card h2 { margin:0; font-size:17px; letter-spacing:-.2px; }
+.today-count { display:grid; place-items:center; min-width:28px; height:28px; padding:0 8px; border-radius:9px; background:#303644; color:#d7deec; font-size:12px; font-weight:700; }
+.today-card--priority .today-count { background:#f18b4224; color:#ffb47d; }
+.today-list { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.today-row { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; text-align:left; border:1px solid #2c303a; border-radius:13px; background:#191c23; color:var(--ink); padding:12px 14px; font:inherit; cursor:pointer; transition:border-color .15s,background .15s,transform .15s; }
+.today-row:hover { border-color:#f18b4266; background:#1d2028; transform:translateY(-1px); }
+.today-row strong { display:block; font-size:13px; }
+.today-row small { display:block; margin-top:4px; color:#8f99ac; font-size:11px; }
+.today-age { flex:none; color:#ffb47d; font-size:11px; font-weight:600; }
+.today-age .ui-icon { width:16px; height:16px; }
+.today-row--action { cursor:default; }
+.today-row--action:hover { transform:none; }
+.today-row-main { flex:1; min-width:0; text-align:left; border:0; background:none; color:inherit; font:inherit; padding:0; cursor:pointer; }
+.today-row--action .button { flex:none; font-size:11px; padding:10px 13px; }
+.today-more { margin-top:12px; border:0; background:none; color:#ffb47d; font:inherit; font-size:12px; cursor:pointer; padding:4px 0; }
+.today-empty { border:1px dashed #3a3f4b; border-radius:14px; padding:18px; color:#aab4c6; }
+.today-empty strong { color:var(--ink); font-size:14px; }
+.today-empty p { margin:6px 0 0; font-size:12px; line-height:1.6; }
+.today-trend { margin:0 0 14px; color:#c3cadb; font-size:13px; }
+.today-funnel { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.today-funnel li { display:grid; grid-template-columns:150px minmax(0,1fr) 34px; align-items:center; gap:12px; font-size:12px; color:#c3cadb; }
+.today-funnel strong { text-align:right; color:var(--ink); font-size:14px; }
+.today-bar { height:10px; border-radius:6px; background:#262a33; overflow:hidden; }
+.today-bar i { display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,#c9702a,#f18b42); min-width:2px; }
+.today-note { margin:14px 0 0; color:#8591a7; font-size:11px; line-height:1.6; }
+.today-card :focus-visible, .today-periods :focus-visible, .today-alert:focus-visible { outline:2px solid #f18b42; outline-offset:2px; }
+@media (prefers-reduced-motion:reduce) { .today-row, .today-periods button { transition:none; } .today-row:hover { transform:none; } }
+@media (max-width:900px) {
+  .today-grid { grid-template-columns:minmax(0,1fr); }
+  .today-funnel li { grid-template-columns:110px minmax(0,1fr) 28px; }
+  .today-row--action { flex-direction:column; align-items:stretch; }
+  .today-row--action .button { width:100%; }
+}
+
+/* Consultas: filtro por fase. */
+.projects-filter { display:inline-flex; flex-wrap:wrap; gap:6px; padding:5px; margin:0 0 14px; border:1px solid #333842; border-radius:999px; background:#15171c; }
+.projects-filter button { border:0; background:none; color:#aeb9cc; padding:8px 14px; border-radius:999px; font:inherit; font-size:12px; font-weight:600; cursor:pointer; }
+.projects-filter button:hover { color:var(--ink); }
+.projects-filter button[aria-pressed=true] { background:#f18b4220; color:#ffb47d; box-shadow:inset 0 0 0 1px #f18b4255; }
+.projects-filter button:focus-visible { outline:2px solid #f18b42; outline-offset:2px; }

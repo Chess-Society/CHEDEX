@@ -190,3 +190,18 @@ test('desarrollo de proyectos admite una consulta por correo con su modalidad pr
   assert.equal(project.intakeMode,'email-template');
   assert.equal(project.progressPhase,'Por confirmar');
 });
+
+test('el listado de administración añade fecha de creación y último mensaje; el del cliente no',async t=>{
+  const {call,create}=await fixture(t);const project=await create();
+  const first=(await (await call('andresli','/api/admin/projects')).json()).projects[0];
+  assert.equal(typeof first.createdAt,'number');assert.equal(first.lastMessageBy,null);assert.equal(first.lastMessageAt,null);
+  let revision=(await (await call('alice',`/api/projects/${project.id}`)).json()).project.revision;
+  assert.equal((await call('alice',`/api/projects/${project.id}/comments`,{revision,text:'Hola, ¿cómo seguimos?'})).status,200);
+  const asked=(await (await call('andresli','/api/admin/projects')).json()).projects[0];
+  assert.equal(asked.lastMessageBy,'Alice');assert.equal(typeof asked.lastMessageAt,'number');
+  revision=(await (await call('andresli',`/api/admin/projects/${project.id}`)).json()).project.revision;
+  const reply=await call('andresli',`/api/admin/projects/${project.id}`,{revision,action:'update',internal:false,text:'Te respondo hoy.'},'PUT');assert.equal(reply.status,200,await reply.clone().text());
+  assert.equal((await (await call('andresli','/api/admin/projects')).json()).projects[0].lastMessageBy,'AndresLi');
+  const own=(await (await call('alice','/api/projects')).json()).projects[0];
+  for(const key of ['createdAt','lastMessageBy','lastMessageAt'])assert.equal(key in own,false,key);
+});

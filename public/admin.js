@@ -2,7 +2,7 @@ import './button-effects.js';
 import { initTeam } from './team-workspace.js';
 import { icon } from './icons.js';
 import { initAdminWorkspace } from './admin-workspace.js';
-import { serviceProfiles, serviceNeeds } from './services-data.js';
+import { serviceProfiles, serviceNeeds, phaseOf } from './services-data.js';
 import { enhanceSelects } from './selects.js';
 
 const status = document.querySelector('#admin-status');
@@ -28,11 +28,11 @@ async function request(path, options = {}) {
 const field = (label, key, value, max, wide = false) => `<label${wide ? ' class="wide"' : ''}>${label}<input data-field="${key}" value="${escape(value)}" maxlength="${max}" required></label>`;
 const select = (label, key, value, choices) => `<label>${label}<select data-field="${key}">${choices.map(([id, text]) => `<option value="${escape(id)}"${value === id ? ' selected' : ''}>${escape(text)}</option>`).join('')}</select></label>`;
 function render() {
-  catalog.innerHTML = services.map((service, index) => `<article class="admin-editor" data-index="${index}"><div class="admin-editor-heading"><div><p class="eyebrow">${service.published ? 'Visible en la web' : 'Oculto en la web'}</p><h2>${escape(service.title)}</h2></div><div class="admin-editor-controls"><button data-action="up" aria-label="Subir servicio ${index + 1}"${index === 0 ? ' disabled' : ''}>${icon('up')}</button><button data-action="down" aria-label="Bajar servicio ${index + 1}"${index === services.length - 1 ? ' disabled' : ''}>${icon('down')}</button><button data-action="remove"${services.length === 1 ? ' disabled' : ''}>Quitar</button></div></div>
+  catalog.innerHTML = services.map((service, index) => `<article class="admin-editor" data-index="${index}"><div class="admin-editor-heading"><div><p class="eyebrow">${phaseOf(service) === 'consultoria' ? 'Fase 1' : 'Fase 2'} · ${service.published ? 'Visible en la web' : 'Oculto en la web'}</p><h2>${escape(service.title)}</h2></div><div class="admin-editor-controls"><button data-action="up" aria-label="Subir servicio ${index + 1}"${index === 0 ? ' disabled' : ''}>${icon('up')}</button><button data-action="down" aria-label="Bajar servicio ${index + 1}"${index === services.length - 1 ? ' disabled' : ''}>${icon('down')}</button><button data-action="remove"${services.length === 1 ? ' disabled' : ''}>Quitar</button></div></div>
     <details class="dashboard-service-fields" name="service-editor"><summary>Editar contenido y condiciones</summary><div class="admin-fields">${field('Título', 'title', service.title, 85)}${field('Etiqueta de la ilustración', 'label', service.label, 65)}
     <label class="wide">Descripción<textarea data-field="description" maxlength="500" required>${escape(service.description)}</textarea></label>
     <label class="wide">Qué incluye (una característica por línea, hasta seis)<textarea data-field="features" required>${escape(service.features.join('\n'))}</textarea></label>
-    ${field('Texto del botón', 'button', service.button, 55)}${select('Ilustración', 'graphic', service.graphic, [['school', 'Colegios y centros'], ['career', 'Ideas y colaboraciones'], ['content', 'Apoyo y comunicación'], ['support', 'Acompañamiento']])}
+    ${field('Texto del botón', 'button', service.button, 55)}${select('Ilustración', 'graphic', service.graphic, [['school', 'Colegios y centros'], ['career', 'Ideas y colaboraciones'], ['content', 'Apoyo y comunicación'], ['support', 'Acompañamiento'], ['travel', 'Camino y seguimiento']])}${select('Fase de la oferta', 'phase', phaseOf(service), [['consultoria', 'Fase 1 · Consultoría Chedex'], ['marca-personal', 'Fase 2 · Marca personal con La Chulapa']])}
     ${select('Perfil de la consulta', 'profile', service.profile, serviceProfiles.map(value => [value, value]))}${select('Motivo de contacto', 'need', service.need, serviceNeeds.map(value => [value, value]))}</div>
     <div class="admin-checks"><label><input type="checkbox" data-field="published"${service.published ? ' checked' : ''}>Visible en la web</label><label><input type="checkbox" data-field="featured"${service.featured ? ' checked' : ''}>Destacar tarjeta</label></div>
     <div class="admin-price"><label>Precio o condiciones económicas (opcional)<input type="text" data-field="priceText" value="${escape(service.priceText)}" maxlength="60" placeholder="Vacío: no se mostrará ningún precio"></label><div class="admin-checks"><label><input type="checkbox" data-field="showPrice"${service.showPrice ? ' checked' : ''}>Mostrar el precio en la web</label></div></div>
@@ -79,7 +79,7 @@ catalog.addEventListener('click', event => {
 document.querySelector('#admin-add').addEventListener('click', () => {
   if (busy) return;
   if (services.length >= 12) { message('Puedes publicar hasta 12 servicios.', true); return; }
-  services.push({ id: crypto.randomUUID(), title: 'Nuevo servicio', label: 'A tu medida', description: '', features: ['Acompañamiento personalizado'], button: 'Hablemos', graphic: 'content', profile: 'Otra consulta', need: 'Orientación inicial', featured: false, published: false, priceText: '', showPrice: false });
+  services.push({ id: crypto.randomUUID(), title: 'Nuevo servicio', label: 'A tu medida', description: '', features: ['Acompañamiento personalizado'], button: 'Hablemos', graphic: 'content', phase: 'consultoria', profile: 'Otra consulta', need: 'Orientación inicial', featured: false, published: false, priceText: '', showPrice: false });
   render(); changed(); catalog.lastElementChild.querySelector('details').open=true; catalog.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 save.addEventListener('click', async () => {
@@ -106,7 +106,7 @@ document.querySelector('#admin-logout').addEventListener('click', async () => {
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
 load().catch(error => { login.hidden = false; message(error.message, true); });
 
-const views={team:['Equipo','Cada persona, su trabajo.','Asigna proyectos, prepara los encargos y revisa las entregas del equipo.'],overview:['Resumen','Todo en su sitio.','Una vista clara de los proyectos, las personas y el siguiente paso.'],projects:['Consultas','Cada consulta, su recorrido.','Confirma la recepción y actualiza las fases. El trabajo se atiende por correo.'],people:['Usuarios','Usuarios y equipo.','Distingue las cuentas registradas de las personas que trabajan contigo.'],reviews:['Reseñas','Escuchar también es avanzar.','Revisa las opiniones de experiencias confirmadas antes de publicarlas.'],services:['Servicios','Tú decides qué ofrecer.','Edita el catálogo que aparece en la web. Los cambios se aplican al guardar.']};
+const views={team:['Equipo','Cada persona, su trabajo.','Asigna proyectos, prepara los encargos y revisa las entregas del equipo.'],overview:['Hoy','Lo que necesita tu atención.','Respuestas pendientes, llamadas y el estado de tus consultas.'],projects:['Consultas','Cada consulta, su recorrido.','Confirma la recepción y actualiza las fases. El trabajo se atiende por correo.'],people:['Clientes y equipo','Clientes y equipo.','Distingue las cuentas registradas de las personas que trabajan contigo.'],reviews:['Reseñas','Escuchar también es avanzar.','Revisa las opiniones de experiencias confirmadas antes de publicarlas.'],services:['Servicios','Tú decides qué ofrecer.','Edita el catálogo que aparece en la web. Los cambios se aplican al guardar.']};
 function showAdminView(view){
  if(!views[view])return;
  document.querySelectorAll('[data-admin-pane]').forEach(pane=>{pane.hidden=pane.dataset.adminPane!==view;});

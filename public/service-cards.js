@@ -1,4 +1,5 @@
 import { icon } from './icons.js';
+import { phaseOf } from './services-data.js';
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const renderPrice = value => {
@@ -13,15 +14,26 @@ const graphics = {
   content: '<rect x="73" y="37" width="154" height="141" rx="12" fill="#20232a" stroke="#454952" transform="rotate(-7 150 100)"/><rect x="158" y="30" width="133" height="154" rx="11" fill="#292c34" stroke="#50545f"/><rect x="175" y="47" width="98" height="49" rx="5" fill="#f18b4225"/><circle cx="223" cy="71" r="14" fill="#f18b42"/><path d="M176 115h96m-96 15h77m-77 15h89m-89 15h53" stroke="#b0b5c2" stroke-width="3"/>',
 };
 
+const phases = [
+  { id: 'consultoria', number: 'Fase 1', title: 'Consultoría Chedex', text: 'Primero entendemos tu proyecto y definimos el camino. Asesoramiento accesible para el sector.', action: 'Ver servicio completo' },
+  { id: 'marca-personal', number: 'Fase 2', title: 'Marca personal con La Chulapa', text: 'Cuando el proyecto está claro, damos el siguiente paso: asesoramiento y edición de vídeo para tu marca personal.', action: 'Ver paquete completo' },
+];
+
+const renderCard = (service, action) => `<article class="bundle-card${service.featured ? ' featured' : ''}">
+    <div class="bundle-visual"><span class="bundle-label">${escape(service.label)}</span><svg viewBox="0 0 390 205" aria-hidden="true">${graphics[service.graphic] || graphics.content}</svg><span class="bundle-watermark">CHEDEX / A TU MEDIDA</span></div>
+    <div class="bundle-copy"><h3>${escape(service.title)}</h3><p>${escape(service.description)}</p><div class="bundle-bottom">${service.priceText ? renderPrice(service.priceText) : ''}<a href="/servicios" class="button" aria-label="Ver detalles de ${escape(service.title)}">${action} <span aria-hidden="true">${icon('external')}</span></a></div></div>
+  </article>`;
+
 export function renderServices(container, services) {
   if (!services.length) {
     container.innerHTML = '<p>Estamos preparando nuevas propuestas. Mientras tanto, cuéntanos qué necesitas.</p>';
     return;
   }
-  container.innerHTML = services.map(service => `<article class="bundle-card${service.featured ? ' featured' : ''}${service.id === 'desarrollo-proyectos' ? ' bundle-card--project' : ''}">
-    <div class="bundle-visual"><span class="bundle-label">${escape(service.label)}</span><svg viewBox="0 0 390 205" aria-hidden="true">${graphics[service.graphic] || graphics.content}</svg><span class="bundle-watermark">CHEDEX / A TU MEDIDA</span></div>
-    <div class="bundle-copy"><h3>${escape(service.title)}</h3><p>${escape(service.description)}</p><div class="bundle-bottom">${service.priceText ? renderPrice(service.priceText) : ''}<a href="/servicios" class="button" aria-label="Ver detalles de ${escape(service.title)}">${service.id === 'desarrollo-proyectos' ? 'Ver servicio completo' : 'Ver paquete completo'} <span aria-hidden="true">${icon('external')}</span></a></div></div>
-  </article>`).join('');
+  container.innerHTML = phases.map(phase => {
+    const group = services.filter(service => phaseOf(service) === phase.id);
+    if (!group.length) return '';
+    return `<section class="phase-group phase-group--${phase.id}" aria-labelledby="phase-${phase.id}"><div class="phase-heading"><span class="phase-number">${phase.number}</span><div><h3 id="phase-${phase.id}">${phase.title}</h3><p>${phase.text}</p></div></div><div class="phase-cards">${group.map(service => renderCard(service, phase.action)).join('')}</div></section>`;
+  }).join('');
 }
 
 export async function loadServices(container) {

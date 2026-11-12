@@ -163,3 +163,12 @@ button.service-video-link { width:100%; }
 .service-project-footer { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:20px; margin:25px 0 20px; }.service-project-price { color:var(--ink); font-size:23px; font-weight:650; line-height:1.3; letter-spacing:-.5px; }.service-project-footer>div>p+p { color:var(--muted); font-size:12px; line-height:1.6; margin-top:7px; }.service-project-footer .button { font-size:12px; }.service-project-note { color:var(--muted); font-size:12px; line-height:1.8; }
 @media(max-width:800px) { .service-project { grid-template-columns:1fr; max-width:620px; margin-inline:auto; }.service-project-art { padding:70px 25px 42px; }.service-project-art>p { font-size:31px; }.service-project-art svg { max-width:220px; margin-top:15px; }.service-project-copy { padding:25px; }.service-project-copy h2 { font-size:27px; } }
 @media(max-width:540px) { .service-project-footer .button { width:100%; } }
+
+/* Two phases: consultancy first, then personal brand with La Chulapa. */
+.services-phase { margin-top:64px; }
+.services-phase:first-of-type { margin-top:40px; }
+.services-phase-heading { display:flex; gap:18px; align-items:flex-start; margin-bottom:26px; }
+.services-phase-heading h2 { margin:0; font-size:clamp(28px,3.4vw,40px); }
+.services-phase-heading p { margin:8px 0 0; max-width:660px; color:var(--muted); }
+.services-scope { margin-top:28px; }
+@media(max-width:800px) { .services-phase { margin-top:48px; }.services-phase-heading { flex-direction:column; gap:10px; } }

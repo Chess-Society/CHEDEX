@@ -1,6 +1,6 @@
 import { teamRole } from './team-api.js';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { publicServices, serviceNeeds, serviceProfiles } from '../public/services-data.js';
+import { publicServices, serviceNeeds, serviceProfiles, servicePhases, phaseOf } from '../public/services-data.js';
 import { initializeStore, cleanupExpired } from './store.js';
 import { reportIncident } from './security.js';
 import { createWorkspaceApi } from './workspace-api.js';
@@ -27,11 +27,12 @@ export function validateServices(value) {
     ids.add(id);
     if (!Array.isArray(service.features) || service.features.length < 1 || service.features.length > 6) throw new HttpError(400, 'Incluye entre 1 y 6 características.');
     if (!serviceProfiles.includes(service.profile) || !serviceNeeds.includes(service.need) || !['school', 'travel', 'career', 'content', 'support'].includes(service.graphic)) throw new HttpError(400, 'Revisa el perfil, el motivo o la ilustración.');
+    if (service.phase !== undefined && !servicePhases.includes(service.phase)) throw new HttpError(400, 'Revisa la fase del servicio.');
     if (['published', 'featured', 'showPrice'].some(key => typeof service[key] !== 'boolean')) throw new HttpError(400, 'Revisa las opciones de publicación.');
     const priceText = text(service.priceText, 60, 'precio', true);
     if (service.showPrice && !priceText) throw new HttpError(400, 'Escribe un precio antes de mostrarlo.');
     return {
-      id, title: text(service.title, 85, 'título'), label: text(service.label, 65, 'etiqueta'),
+      id, phase: phaseOf(service), title: text(service.title, 85, 'título'), label: text(service.label, 65, 'etiqueta'),
       description: text(service.description, 500, 'descripción'), button: text(service.button, 55, 'botón'),
       features: service.features.map(item => text(item, 100, 'características')),
       profile: service.profile, need: service.need, graphic: service.graphic,

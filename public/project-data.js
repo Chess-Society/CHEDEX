@@ -1,6 +1,6 @@
 export const stages = ['Por hablar', 'Acordado', 'En marcha', 'Pendiente de respuesta', 'Completado'];
 export const requestStates = ['Pendiente de revisión', 'En evaluación', 'Aceptada', 'Denegada'];
-export const needs = ['Orientación inicial', 'Apoyo puntual', 'Representación', 'Acompañamiento', 'Desarrollo de proyectos', 'Colaboración de marca'];
+export { serviceNeeds as needs } from './services-data.js';
 
 // The public follow-up describes decisions, never internal production tasks.
 export const progressPhases = ['Por confirmar', 'Recibida', 'Llamada de 15 min', 'Valoración', 'Propuesta acordada', 'En marcha', 'Completado', 'No seguimos'];
@@ -14,6 +14,9 @@ export function progressPhase(project) {
 export const contactEmail = 'chedexapp@proton.me';
 export function requestEmail(values, username) {
   const questions = {
+    'Consultoría puntual':'La duda o decisión concreta que quiero resolver y mi situación actual:',
+    'Consultoría estratégica':'Mi proyecto o negocio de ajedrez y qué quiero mejorar (servicios, precios, captación u otra cosa):',
+    'Acompañamiento estratégico':'Mi proyecto, mis objetivos y cada cuánto necesito revisar avances:',
     'Apoyo puntual':'La ayuda concreta que necesito y el resultado que espero:',
     'Representación':'Dónde necesito que Chedex me represente y para qué:',
     'Acompañamiento':'Mi proyecto, mis objetivos a medio plazo y dónde necesito apoyo:',

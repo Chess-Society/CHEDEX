@@ -122,7 +122,7 @@ test('saved services persist, private drafts and hidden prices stay out of the p
   assert.equal(response.status, 200);
   assert.equal((await response.json()).revision, 2);
   const publicData = await (await call('/api/services')).json();
-  assert.equal(publicData.services.length, 3);
+  assert.equal(publicData.services.length, defaultServices.length - 1);
   assert.equal(publicData.services[0].title, 'Mi servicio actualizado');
   assert.equal(publicData.services[0].priceText, undefined);
   assert.equal(JSON.stringify(publicData).includes('Texto económico privado'), false);

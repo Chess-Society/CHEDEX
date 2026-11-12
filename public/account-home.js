@@ -1,4 +1,5 @@
 import { progressPhase } from './project-data.js';
+import { phaseOfNeed } from './dash-data.js';
 export function homeProject(projects) {
   const priority = p => !p.archived && !['Completado','No seguimos'].includes(progressPhase(p)) ? 0 : 1;
   return [...projects].sort((a,b)=>priority(a)-priority(b)||b.updatedAt-a.updatedAt)[0] || null;
@@ -18,4 +19,26 @@ export function accountStep(project) {
   };
   const [kind,title,text]=states[phase];
   return {kind:project.archived?'closed':kind,title:project.archived?'Seguimiento archivado.':title,text,label:'Ver línea de tiempo',tab:'overview'};
+}
+
+// What comes after the current phase, so the person always knows the next step.
+const afterPhase = {
+  'Por confirmar': 'Chedex confirmará que ha recibido tu correo y te propondrá una llamada de 15 minutos.',
+  'Recibida': 'Acordaremos por correo el horario de una llamada de 15 minutos.',
+  'Llamada de 15 min': 'Valoraremos contigo cómo ayudarte y con qué alcance.',
+  'Valoración': 'Si encaja, acordaremos el alcance y los siguientes pasos por correo.',
+  'Propuesta acordada': 'Empezaremos a trabajar en lo acordado.',
+  'En marcha': 'Al completar el trabajo cerraremos el recorrido y valoraremos si quieres dar el siguiente paso.',
+};
+export function nextStep(project) {
+  if (!project || project.archived) return '';
+  return afterPhase[progressPhase(project)] || '';
+}
+
+// A finished consultancy invites the second phase, unless the person already asked for it.
+export function phase2Offer(projects) {
+  const active = projects.filter(project => !project.archived);
+  const done = active.filter(project => phaseOfNeed(project.need) === 'consultoria' && progressPhase(project) === 'Completado');
+  if (!done.length || active.some(project => phaseOfNeed(project.need) === 'marca-personal')) return null;
+  return done[0];
 }
