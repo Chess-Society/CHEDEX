@@ -11,13 +11,20 @@ const text = (value, max, required = true) => {
 };
 const choice = (value, options) => options.includes(value) ? value : fail(400, 'Opción no válida.');
 const bool = value => typeof value === 'boolean' ? value : fail(400, 'Opción no válida.');
+// Shared documents are plain links: only https, no embedded credentials, bounded length.
+const documentUrl = value => {
+  let url;
+  try { url = new URL(typeof value === 'string' ? value.trim() : ''); } catch { fail(400, 'Escribe un enlace válido.'); }
+  if (url.protocol !== 'https:' || url.username || url.password || url.href.length > 500) fail(400, 'El enlace debe empezar por https://, no incluir usuario ni contraseña y tener menos de 500 caracteres.');
+  return url.href;
+};
 const id = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,60}$/.test(value) ? value : fail(400, 'Identificador no válido.');
 const parse = row => { const content = JSON.parse(row.content); return { id: row.id, ownerId: row.owner_id, username: row.username, revision: row.revision, updatedAt: row.updated_at, ...content, requestStatus: admission(content) }; };
 export function clientProject(project) {
   const privateTasks = new Set(project.tasks.filter(task => task.internal).map(task => task.id));
   return { id: project.id, revision: project.revision, title: project.title, summary: project.summary, need: project.need,
     progressPhase: progressPhase(project), progressNote: project.progressNote || '', intakeMode: project.intakeMode || '', stage: project.stage, requestStatus: admission(project), applicant: project.applicant || null, decisionReason: project.decisionReason || '', archived: project.archived, reviewEligible: project.reviewEligible, createdAt: project.createdAt, updatedAt: project.updatedAt,
-    tasks: project.tasks.filter(task => !task.internal), updates: project.updates.filter(update => !update.internal),
+    tasks: project.tasks.filter(task => !task.internal), updates: project.updates.filter(update => !update.internal), documents: project.documents || [],
     // Old task events have no reliable task identity. Keep them for the team,
     // but do not re-publish potentially withdrawn titles to the owner.
     history: project.history.filter(entry => !entry.internal && !privateTasks.has(entry.taskId) && (entry.taskId || !entry.text.startsWith('Tarea: '))) };
@@ -208,6 +215,19 @@ export function createWorkspaceApi({ authenticate, readBody, writeAllowed, json,
           if (index < 0) project.tasks.push(value); else project.tasks[index] = value;
           taskEventId = taskId;
           eventText = `Tarea: ${value.title}. Estado: ${value.status}.`; internal = value.internal;
+        } else if (body.action === 'document') {
+          project.documents ||= [];
+          if (body.op === 'add') {
+            if (project.documents.length >= 30) fail(400, 'Máximo de 30 documentos por consulta.');
+            const doc = { id: randomUUID(), title: text(body.title, 120), note: text(body.note ?? '', 300, false), url: documentUrl(body.url), createdAt: clock() };
+            project.documents.push(doc);
+            eventText = `Documento compartido: ${doc.title}.`; internal = false;
+          } else if (body.op === 'remove') {
+            const index = project.documents.findIndex(item => item.id === id(body.documentId));
+            if (index < 0) fail(404, 'Documento no encontrado.');
+            const [gone] = project.documents.splice(index, 1);
+            eventText = `Documento retirado: ${gone.title}.`; internal = true;
+          } else fail(400, 'Acción de documento no válida.');
         } else if (body.action === 'update') {
           if (project.updates.length >= 300) fail(400, 'Máximo de 300 mensajes por proyecto.');
           internal = bool(body.internal);

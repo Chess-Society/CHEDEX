@@ -205,3 +205,45 @@ test('el listado de administración añade fecha de creación y último mensaje;
   const own=(await (await call('alice','/api/projects')).json()).projects[0];
   for(const key of ['createdAt','lastMessageBy','lastMessageAt'])assert.equal(key in own,false,key);
 });
+
+test('documentos compartidos por enlace: alta, validación, límite, retirada y privacidad',async t=>{
+  const {call,create}=await fixture(t);const project=await create();
+  const put=async body=>{
+    const current=(await (await call('andresli',`/api/admin/projects/${project.id}`)).json()).project;
+    return call('andresli',`/api/admin/projects/${project.id}`,{revision:current.revision,action:'document',...body},'PUT');
+  };
+  const added=await put({op:'add',title:'Hoja de ruta',note:'Los tres primeros pasos',url:'https://drive.example.com/file/abc'});
+  assert.equal(added.status,200,await added.clone().text());
+  const doc=(await added.json()).project.documents[0];
+  assert.equal(doc.title,'Hoja de ruta');assert.equal(doc.url,'https://drive.example.com/file/abc');assert.equal(typeof doc.createdAt,'number');
+  // La persona propietaria lo ve; otra cuenta no.
+  const own=(await (await call('alice',`/api/projects/${project.id}`)).json()).project;
+  assert.equal(own.documents.length,1);assert.equal(own.documents[0].title,'Hoja de ruta');
+  assert.equal((await call('bob',`/api/projects/${project.id}`)).status,404);
+  assert.ok(own.history.some(entry=>entry.text==='Documento compartido: Hoja de ruta.'));
+  // Enlaces no válidos.
+  for(const url of ['http://example.com/a','javascript:alert(1)','data:text/html,x','https://user:pass@example.com/a','no es un enlace','https://example.com/'+'a'.repeat(500)]){
+    assert.equal((await put({op:'add',title:'X',url})).status,400,url);
+  }
+  assert.equal((await put({op:'add',title:'',url:'https://example.com/a'})).status,400);
+  assert.equal((await put({op:'otra',title:'X',url:'https://example.com/a'})).status,400);
+  // La persona cliente no puede compartir documentos.
+  assert.notEqual((await call('alice',`/api/admin/projects/${project.id}`,{revision:1,action:'document',op:'add',title:'X',url:'https://example.com/a'},'PUT')).status,200);
+  // Retirada: desaparece para la persona y su evento no se publica.
+  const removed=await put({op:'remove',documentId:doc.id});assert.equal(removed.status,200);
+  assert.equal((await (await call('alice',`/api/projects/${project.id}`)).json()).project.documents.length,0);
+  assert.equal((await put({op:'remove',documentId:'no-existe'})).status,404);
+  const afterRemove=(await (await call('alice',`/api/projects/${project.id}`)).json()).project;
+  assert.equal(afterRemove.history.some(entry=>entry.text.startsWith('Documento retirado')),false);
+});
+
+test('una consulta admite como máximo 30 documentos',async t=>{
+  const {call,create}=await fixture(t);const project=await create();
+  let status=200;
+  for(let index=0;index<31;index+=1){
+    const current=(await (await call('andresli',`/api/admin/projects/${project.id}`)).json()).project;
+    status=(await call('andresli',`/api/admin/projects/${project.id}`,{revision:current.revision,action:'document',op:'add',title:`Documento ${index}`,url:`https://example.com/${index}`},'PUT')).status;
+    if(index<30)assert.equal(status,200,String(index));
+  }
+  assert.equal(status,400);
+});

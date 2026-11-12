@@ -87,3 +87,19 @@
 /* Clientes: fila centrada en sus consultas. */
 .client-row .people-summary { display:flex; flex-wrap:wrap; gap:8px 16px; }
 .client-row>.button { align-self:flex-start; font-size:12px; padding:11px 15px; margin-top:6px; }
+
+/* Compartir con la persona (ficha de consulta). */
+.share-panel { margin:26px 0; padding:22px; border:1px solid #333842; border-radius:20px; background:linear-gradient(160deg,#1c1e25,#15171c); }
+.share-panel h3 { margin:6px 0 8px; font-size:18px; }
+.share-grid { display:grid; gap:18px; margin-top:16px; }
+.share-block { border:1px solid #2c303a; border-radius:14px; padding:16px; background:#171a20; }
+.share-block h4 { margin:0 0 10px; font-size:13px; color:#ffb47d; letter-spacing:.04em; text-transform:uppercase; }
+.share-list { list-style:none; margin:0 0 14px; padding:0; display:grid; gap:8px; }
+.share-item { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid #2c303a; border-radius:11px; background:#1b1e25; font-size:13px; }
+.share-item small { display:block; margin-top:3px; color:#8f99ac; font-size:11px; overflow-wrap:anywhere; }
+.share-item a { color:#ffcfaa; overflow-wrap:anywhere; }
+.share-item.is-done strong { text-decoration:line-through; color:#8f99ac; }
+.share-empty { color:#8f99ac; font-size:12px; padding:4px 2px; }
+.share-block form { display:grid; gap:10px; }
+.share-block form .button { justify-self:start; font-size:12px; padding:11px 15px; }
+@media (min-width:1100px) { .share-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }

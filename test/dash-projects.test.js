@@ -76,3 +76,23 @@ test('clientSummary resume las consultas de una persona', () => {
   assert.deepEqual([none.total, none.active, none.lastAt, none.lastPhase], [0, 0, null, null]);
   assert.equal(clientSummary({ id: 'ana' }, [mk('w', { requestStatus: 'Pendiente de revisión' })]).waiting, 1);
 });
+
+import { shareHtml, hostOf } from '../public/dash-share.js';
+test('shareHtml lista solo lo compartido, escapa el contenido y ofrece los tres formularios', () => {
+  const project = { id: 'p', tasks: [{ id: 't1', title: 'Enviar horarios', due: '2026-12-01', status: 'Por hablar', internal: false }, { id: 't2', title: 'NOTA_SECRETA', status: 'Por hablar', internal: true }, { id: 't3', title: '<b>x</b>', status: 'Completado', internal: false }],
+    documents: [{ id: 'd1', title: 'Propuesta', url: 'https://www.example.com/a?x=1', note: 'v1', createdAt: now }],
+    updates: [{ text: 'Hola', createdAt: now, internal: false }, { text: 'SOLO_EQUIPO', createdAt: now, internal: true }] };
+  const html = shareHtml(project);
+  assert.doesNotMatch(html, /NOTA_SECRETA|SOLO_EQUIPO|<b>x/);
+  assert.ok(html.includes('data-step-toggle="t1">Marcar hecho'));
+  assert.ok(html.includes('data-step-toggle="t3">Reabrir'));
+  assert.ok(html.includes('rel="noopener noreferrer"') && html.includes('example.com'));
+  assert.ok(html.includes('data-remove-document="d1"'));
+  for (const id of ['share-step', 'share-document', 'share-update']) assert.ok(html.includes(`id="${id}"`), id);
+  assert.equal(hostOf('https://www.example.com/a'), 'example.com');
+  assert.equal(hostOf('no es url'), '');
+});
+test('shareHtml muestra estados vacíos', () => {
+  const html = shareHtml({ id: 'p' });
+  for (const text of ['Aún no hay pasos.', 'Aún no hay documentos.', 'Aún no hay novedades.']) assert.ok(html.includes(text), text);
+});

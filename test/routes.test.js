@@ -105,7 +105,7 @@ test('public opinions have a standalone page and workspace modules are served', 
     assert.equal(new URL(request.url).pathname, '/reviews.html'); return new Response('Opiniones');
   } } });
   assert.equal(response.status, 200);
-  for (const path of ['/site-animations.js','/vendor/animejs.js','/vendor/animejs.LICENSE.txt','/button-effects.js','/interaction-ui.js','/account-home.js','/team-workspace.js','/team-data.js','/workspace.css','/workspace-ui.js','/admin-workspace.js','/account.js','/project-data.js','/portal-nav.js','/reviews.js','/dash.css','/dash-data.js','/dash-today.js','/dash-projects.js']) {
+  for (const path of ['/site-animations.js','/vendor/animejs.js','/vendor/animejs.LICENSE.txt','/button-effects.js','/interaction-ui.js','/account-home.js','/team-workspace.js','/team-data.js','/workspace.css','/workspace-ui.js','/admin-workspace.js','/account.js','/project-data.js','/portal-nav.js','/reviews.js','/dash.css','/dash-data.js','/dash-today.js','/dash-projects.js','/dash-share.js','/account-dash.js']) {
     const asset = await worker.fetch(new Request(`https://chedex.app${path}`), { ASSETS: { fetch: () => new Response('asset') } });
     assert.equal(asset.status, 200, path);
   }

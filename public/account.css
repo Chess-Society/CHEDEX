@@ -203,3 +203,29 @@
 .account-progress li.done { background:#c9702a; }
 .account-progress li.current { background:#f18b42; box-shadow:0 0 0 3px #f18b4226; }
 .account-progress-label { margin:0 0 10px; color:#aab4c6; font-size:12px; }
+
+/* Panel informativo: pasos, documentos y novedades. */
+.dash-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin:22px 0; }
+.dash-block { border:1px solid #333842; border-top:2px solid #444852; border-radius:20px; padding:22px; background:linear-gradient(160deg,#1c1e25,#15171c); box-shadow:0 7px 0 #07080a; min-width:0; }
+.dash-block--wide { grid-column:1 / -1; }
+.dash-block>header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.dash-block h3 { margin:0; font-size:17px; }
+.dash-count { display:grid; place-items:center; min-width:28px; height:28px; padding:0 8px; border-radius:9px; background:#303644; color:#d7deec; font-size:12px; font-weight:700; }
+.dash-list { list-style:none; margin:0; padding:0; display:grid; gap:9px; }
+.dash-step { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border:1px solid #2c303a; border-radius:13px; background:#191c23; font-size:13px; }
+.dash-box { flex:none; width:18px; height:18px; margin-top:1px; border:2px solid #f18b42; border-radius:5px; }
+.dash-step small, .dash-doc small { display:block; margin-top:4px; color:#8f99ac; font-size:11px; line-height:1.6; overflow-wrap:anywhere; }
+.dash-due { color:#ffb47d !important; }
+.dash-doc { display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid #2c303a; border-radius:13px; background:#191c23; transition:border-color .15s,background .15s; }
+.dash-doc:hover { border-color:#f18b4266; background:#1d2028; }
+.dash-doc a { flex:1; min-width:0; padding:12px 14px; color:var(--ink); text-decoration:none; font-size:13px; }
+.dash-open { flex:none; padding-right:14px; color:#ffb47d; font-size:11px; font-weight:600; }
+.dash-news { display:grid; grid-template-columns:70px minmax(0,1fr); gap:12px; padding:12px 14px; border:1px solid #2c303a; border-radius:13px; background:#191c23; font-size:13px; line-height:1.6; }
+.dash-news strong { color:#ffb47d; font-size:12px; }
+.dash-news--note { border-color:#f18b4255; background:#f18b4210; }
+.dash-news span { overflow-wrap:anywhere; }
+.dash-empty { margin:0; padding:16px; border:1px dashed #3a3f4b; border-radius:13px; color:#aab4c6; font-size:12px; line-height:1.6; }
+.dash-note { margin:12px 0 0; color:#8591a7; font-size:11px; line-height:1.6; }
+.dash-block :focus-visible { outline:2px solid #f18b42; outline-offset:2px; }
+@media (max-width:900px) { .dash-grid { grid-template-columns:minmax(0,1fr); } .dash-news { grid-template-columns:minmax(0,1fr); gap:4px; } }
+@media (prefers-reduced-motion:reduce) { .dash-doc { transition:none; } }
