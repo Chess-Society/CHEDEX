@@ -17,6 +17,12 @@ Para publicar la nueva versión en el destino existente, cuando corresponda:
 npm run deploy
 ```
 
+## Despliegue desde main
+
+Desde el 2026-11-12, `main` es la rama de publicación. Cada cambio que llega a `main` ejecuta `.github/workflows/deploy.yml`: repite las comprobaciones (`check`, `animations:check`, `test` y `deploy:check`), publica el Worker con `npm run deploy` y comprueba el sitio con `scripts/monitor-production.mjs`. Las ramas y los PR solo ejecutan las comprobaciones de `ci.yml`; no publican.
+
+**Requisito (lo hace el titular, una vez):** crear en GitHub, en Settings → Secrets and variables → Actions, el secreto `CLOUDFLARE_API_TOKEN` con un token de Cloudflare con permiso «Editar Workers» limitado a esta cuenta. El identificador de cuenta ya está en `wrangler.jsonc`. Mientras el secreto no exista, el flujo avisa («Despliegue omitido») y no publica; nunca imprime ni guarda credenciales. `npm run deploy` manual sigue funcionando desde un ordenador con sesión de Wrangler.
+
 La web corporativa sirve `/`, `/servicios`, `/apoyo`, `/equipo`, `/colaboraciones`, `/proyectos`, `/contacto`, sus recursos estáticos y `/healthz`. Los alias con barra final y `/index.html` redirigen a la ruta canónica; las rutas de la aplicación antigua devuelven 404. El catálogo y `/admin` utilizan las claves existentes de Turso. El acceso administrativo utiliza Lichess con PKCE y retorno `https://chedex.app/auth/callback`, sin un secreto OAuth nuevo. Solo el ID autenticado `andresli` puede gestionar el catálogo. No se integra Apple Wallet.
 
 Los datos nuevos se guardan en `chedex_v2_catalog`, `chedex_v2_oauth`, `chedex_v2_sessions` y `chedex_v2_limits`. Las tablas antiguas permanecen intactas. El servidor local nunca conecta con Turso.
