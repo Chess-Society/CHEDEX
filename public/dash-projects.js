@@ -54,3 +54,18 @@ export function nextActionHtml(project, { proposed = false } = {}) {
   ].join('');
   return `<section class="next-action" aria-label="Siguiente paso"><p class="eyebrow">Siguiente paso</p><h3>${esc(action.title)}</h3><p>${esc(action.text)}</p>${buttons ? `<div class="next-action-buttons">${buttons}</div>` : ''}</section>`;
 }
+
+// What the owner needs to know about a client at a glance, from the consultas already loaded.
+export function clientSummary(user, projects) {
+  const mine = projects.filter(project => project.ownerId === user.id).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const active = mine.filter(project => !project.archived);
+  const latest = active[0] || mine[0] || null;
+  return {
+    total: mine.length,
+    active: active.length,
+    waiting: active.filter(needsReply).length,
+    lastAt: latest ? latest.updatedAt : null,
+    lastPhase: latest ? (latest.archived ? 'Archivada' : progressPhase(latest)) : null,
+    lastTitle: latest ? latest.title : null,
+  };
+}

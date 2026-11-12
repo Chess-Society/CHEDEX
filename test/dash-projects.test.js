@@ -63,3 +63,16 @@ test('sin correo de contacto no hay enlace de correo y el HTML escapa los textos
   assert.ok(html.includes('data-quick-phase="Llamada de 15 min"'));
   assert.equal(nextActionHtml({ ...full, progressPhase: 'Completado' }).includes('data-propose-phase2="f"'), true);
 });
+
+import { clientSummary } from '../public/dash-projects.js';
+test('clientSummary resume las consultas de una persona', () => {
+  const mk = (id, extra) => ({ ...base, id, ownerId: 'ana', ...extra });
+  const info = clientSummary({ id: 'ana' }, [mk('a', { updatedAt: now - 2 * DAY }), mk('b', { updatedAt: now, progressPhase: 'En marcha' }), mk('c', { archived: true, updatedAt: now - 9 * DAY }), { ...base, id: 'x', ownerId: 'luis' }]);
+  assert.equal(info.total, 3);
+  assert.equal(info.active, 2);
+  assert.equal(info.lastPhase, 'En marcha');
+  assert.equal(info.lastAt, now);
+  const none = clientSummary({ id: 'nadie' }, []);
+  assert.deepEqual([none.total, none.active, none.lastAt, none.lastPhase], [0, 0, null, null]);
+  assert.equal(clientSummary({ id: 'ana' }, [mk('w', { requestStatus: 'Pendiente de revisión' })]).waiting, 1);
+});

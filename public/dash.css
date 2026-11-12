@@ -83,3 +83,7 @@
 .next-action-buttons .button { font-size:12px; padding:12px 16px; }
 .project-management { margin-top:34px; padding-top:20px; border-top:1px solid #30343e; }
 .project-management .project-lifecycle-actions { margin:12px 0 0; }
+
+/* Clientes: fila centrada en sus consultas. */
+.client-row .people-summary { display:flex; flex-wrap:wrap; gap:8px 16px; }
+.client-row>.button { align-self:flex-start; font-size:12px; padding:11px 15px; margin-top:6px; }
