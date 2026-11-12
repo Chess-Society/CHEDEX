@@ -36,3 +36,30 @@ test('la sección Llamadas anuncia «Próximamente» y lista las llamadas por co
   assert.ok(html.includes('Mi club'));
   assert.ok(callsPaneHtml({ projects: [], slots: [], now }).includes('Próximamente'));
 });
+
+import { nextAction, nextActionHtml } from '../public/dash-projects.js';
+const full = { ...base, id: 'f', applicant: { firstName: 'Ana', email: 'ana@example.com' }, title: 'Mi club' };
+
+test('nextAction guía cada fase con su botón rápido y sin inventar correos', () => {
+  const by = phase => nextAction({ ...full, progressPhase: phase });
+  assert.equal(by('Por confirmar').quick.phase, 'Recibida');
+  assert.equal(by('Recibida').quick.phase, 'Llamada de 15 min');
+  assert.ok(by('Recibida').mail.startsWith('mailto:ana%40example.com?subject='));
+  assert.ok(decodeURIComponent(by('Recibida').mail).includes('Hola Ana'));
+  assert.equal(by('Llamada de 15 min').mail, '');
+  assert.equal(by('Valoración').quick.phase, 'Propuesta acordada');
+  assert.equal(by('En marcha').quick.phase, 'Completado');
+  assert.equal(by('Completado').phase2, true, 'consultoría completada propone la fase 2');
+  assert.equal(nextAction({ ...full, progressPhase: 'Completado', need: 'Apoyo puntual' }).phase2, false);
+  assert.equal(by('No seguimos').quick, null);
+  assert.equal(nextAction({ ...full, archived: true }).title, 'Consulta archivada');
+});
+
+test('sin correo de contacto no hay enlace de correo y el HTML escapa los textos', () => {
+  const noMail = { ...full, applicant: { firstName: '<b>Ana</b>' }, progressPhase: 'Recibida', title: '<img onerror=1>' };
+  assert.equal(nextAction(noMail).mail, '');
+  const html = nextActionHtml(noMail);
+  assert.doesNotMatch(html, /<b>Ana|<img onerror/);
+  assert.ok(html.includes('data-quick-phase="Llamada de 15 min"'));
+  assert.equal(nextActionHtml({ ...full, progressPhase: 'Completado' }).includes('data-propose-phase2="f"'), true);
+});
