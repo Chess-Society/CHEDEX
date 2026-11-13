@@ -140,7 +140,11 @@ test('Pulse tiene página propia, beta visible y acceso externo explícito sin r
   const html = readFileSync(new URL('../public/pulse.html', import.meta.url), 'utf8');
   assert.match(html, /Versión beta/);
   assert.match(html, /href="https:\/\/chedexpulse\.app\/" target="_blank" rel="noopener noreferrer"/);
-  assert.match(html, /El panel interactivo está en Chedex Pulse/);
+  assert.match(html, /Los tableros interactivos están en chedexpulse\.app/);
+  assert.match(html, /Aprende ajedrez/);
+  assert.match(html, /Disponible ahora/);
+  assert.match(html, /Ningún profesor ha revisado todavía los contenidos/);
+  assert.doesNotMatch(html, /observatorio|retransmisiones de Lichess|FIDE/i);
   assert.doesNotMatch(html, /<iframe|http-equiv="refresh"/i);
   for (const file of ['index.html', 'services.html', 'projects.html', 'account.html']) {
     assert.match(readFileSync(new URL('../public/' + file, import.meta.url), 'utf8'), /href="\/pulse" class="nav-pulse">Pulse <span>Beta<\/span>/, file);

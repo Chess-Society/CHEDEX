@@ -43,3 +43,26 @@
 @media(max-width:1050px) { .pulse-hero { gap:35px; }.pulse-intro h1 { font-size:45px; }.pulse-lead { font-size:18px; }.pulse-features { gap:22px; }.pulse-start { padding:30px; gap:28px; } }
 @media(max-width:800px) { .pulse-hero { grid-template-columns:1fr; gap:35px; padding-top:42px; }.pulse-intro h1 { font-size:clamp(40px,7vw,54px); letter-spacing:-1.8px; }.pulse-preview { width:100%; max-width:520px; }.pulse-beta-notice { flex-direction:column; gap:13px; padding:22px; }.pulse-features { grid-template-columns:1fr; gap:27px; }.pulse-discover { padding-top:55px; }.pulse-features h3 { margin:14px 0 11px; }.pulse-start { flex-direction:column; align-items:stretch; margin-top:50px; }.pulse-start-action .button { width:100%; }.pulse-section-heading h2,.pulse-start h2 { font-size:31px; } }
 @media(max-width:480px) { .pulse-page { padding-bottom:65px; }.pulse-intro h1 { font-size:40px; }.pulse-actions .button { width:100%; }.pulse-preview-bar { padding:16px; }.pulse-preview-grid { padding-inline:15px; }.pulse-preview-grid strong { font-size:12px; }.pulse-start { padding:26px 23px; } }
+
+/* Academia: lección en cinco partes, niveles y confianza. */
+.pulse-lesson { list-style:none; margin:0; padding:8px 20px 6px; display:grid; gap:10px; }
+.pulse-lesson li { display:flex; gap:14px; align-items:flex-start; border:1px solid #353b45; border-radius:9px; background:#11151a; padding:13px 14px; }
+.pulse-lesson li>span { flex:none; display:grid; place-items:center; width:26px; height:26px; border-radius:8px; background:#f18b4220; color:#ffb47d; font:600 12px ui-monospace,monospace; }
+.pulse-lesson strong { display:block; font-size:13px; color:#e9e9e5; }
+.pulse-lesson small { display:block; margin-top:4px; color:var(--muted); font-size:11px; line-height:1.6; }
+.pulse-levels-section { padding-top:75px; }
+.pulse-levels { list-style:none; margin:34px 0 0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.pulse-levels li { display:flex; align-items:center; gap:16px; border:1px solid #353b45; border-radius:14px; background:#13171c; padding:18px 20px; }
+.pulse-levels li.is-open { border-color:#f18b4266; background:linear-gradient(120deg,#271f19,#15181d 75%); }
+.pulse-level-number { flex:none; display:grid; place-items:center; width:34px; height:34px; border-radius:10px; background:#262b34; color:#d7deec; font:600 14px ui-monospace,monospace; }
+.is-open .pulse-level-number { background:#f18b42; color:#1b1006; }
+.pulse-levels h3 { margin:0; font-size:17px; letter-spacing:-.3px; }
+.pulse-levels p { margin:5px 0 0; color:var(--muted); font-size:12px; line-height:1.6; }
+.pulse-levels li>div { flex:1; min-width:0; }
+.pulse-level-state { flex:none; color:#8f99ac; font:10px ui-monospace,monospace; letter-spacing:.5px; text-transform:uppercase; }
+.is-open .pulse-level-state { color:#ffb47d; }
+.pulse-levels-note { margin-top:18px; max-width:640px; color:var(--muted); font-size:12px; line-height:1.8; }
+.pulse-trust { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:30px; margin-top:60px; }
+.pulse-trust article { border-top:1px solid #414650; padding-top:20px; }
+.pulse-trust p { margin-top:14px; color:var(--muted); font-size:13px; line-height:1.85; }
+@media(max-width:800px) { .pulse-levels, .pulse-trust { grid-template-columns:minmax(0,1fr); } .pulse-levels li { flex-wrap:wrap; } }

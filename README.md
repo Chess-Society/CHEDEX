@@ -81,4 +81,4 @@ Tras cambiar Anime.js, ejecuta `npm run animations:build`; `npm run animations:c
 
 ## Acceso a Chedex Pulse
 
-`/pulse` es una página pública de presentación y acceso al observatorio en `https://chedexpulse.app/`. La navegación y la página identifican la versión como beta. Los enlaces abren Pulse en otra pestaña; no se integra su aplicación, no se copian sus datos y no se modifica el acceso a la cuenta de Chedex.
+`/pulse` es una página pública de presentación y acceso a Chedex Pulse (`https://chedexpulse.app/`), una academia digital de ajedrez en beta: lecciones interactivas, práctica con corrección y seis niveles hasta los 2000 Elo (hoy disponibles los dos primeros). Refleja el estado que declara su web: gratis durante la beta y después 10 € al mes, contenido aún sin revisión de profesores y entrenador de partidas en desarrollo. Hay que revisar esta página cuando cambie el producto. La navegación y la página identifican la versión como beta. Los enlaces abren Pulse en otra pestaña; no se integra su aplicación, no se copian sus datos y no se modifica el acceso a la cuenta de Chedex.
